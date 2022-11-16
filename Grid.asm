@@ -5,7 +5,7 @@ data segment
     pkey db "press any key...$" 
     GRIDCOLOR equ 15
     ECRAY equ 200
-    ECRAX equ 320
+    ECRAX equ 320  
 ends
 
 stack segment
@@ -20,6 +20,13 @@ start:
     mov es, ax
     
     call set_video
+    
+    mov dx , 10
+    ;mov cx , 100
+    mov al , 10
+    push 5
+    push 7
+    call draw_grid
     
     mov dx,50
     mov al,12
@@ -47,15 +54,34 @@ start:
     mov ax, 4c00h ; exit to operating system.
     int 21h 
     
-    
-    ;cx = pos inicial de colunas
     ;dx = pos inicial de linhas  
     ;Al = cor
-    ;Ax = numero de quadrados verticais
-    ;Bx = numero de quadrados horizontais
+    ;push 1 = altura dos quadrados
+    ;push 2 = comprimentro dos quadrados
     draw_grid proc
-               
-         
+        
+        push bp
+        mov bp,sp       ;[bp + 4] -> altura
+                        ;[bp + 6] -> comprimento
+        push cx
+        
+        xor cx,cx       ;cx = 0
+        
+        loop1_drgrd:
+        
+            call draw_line
+            inc dx
+            push [bp + 4]
+            push [bp + 6]
+            call draw_column
+            add dx , [bp + 4]
+            cmp dx , ECRAY 
+            jb loop1_drgrd
+                   
+        
+        pop cx 
+        pop bp
+        ret 4
         
     endp
     
@@ -197,3 +223,4 @@ start:
 ends
 
 end start ; set entry point and stop the assembler.
+
