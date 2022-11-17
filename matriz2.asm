@@ -6,7 +6,10 @@ data segment
     CellColor equ 15
     ECRAY equ 200
     ECRAX equ 320
-    matriz_cell db 15600 dup(0) ; (320 - 8)/2 * (200)/2 
+    matriz_cell db 15600 dup(0) ; (320 - 8)/2 * (200)/2   
+    lado_cell db 2       
+    gen db dup(?)     
+    cell_num dup(?)    
     fator_resolucao db 2
 
 ends
@@ -23,8 +26,6 @@ start:
     mov es, ax
 
     call set_video
- 
-            
     
     mov dx , 7
     mov cx , 0
@@ -64,6 +65,40 @@ start:
        ret
         
     endp 
+    
+    
+    ;escreve no ecra a geracao
+    ; 
+    update_gen proc
+ 
+        ;call print_quadrado preto por cima do numero de geracoes
+        ;cursor no sitio certo
+        ;escreve o numero de geracoes
+    endp                             
+    
+    update_cellnum proc              
+        
+        ;call print_quadrado preto por cima do numero de celulas
+        ;cursor no sitio certo
+        ;escreve o numero de celulas
+    endp                            
+    
+    print_parar proc                 
+        
+        ;call print_quadrado preto por cima de inciar
+        ;cursor no sitio certo
+        ;escreve parar
+    endp
+     
+     
+    print_iniciar proc
+        
+        
+        ;call print_quadrado preto por cima de parar
+        ;cursor no sitio certo
+        ;escreve iniciar
+        
+    endp
      
     ;Lado do quadrado de cada ponto da matrix
     ;inicio onde escreve
@@ -93,6 +128,7 @@ start:
                     add cx , bx     ; proxima posicao
                 
                 endif1_ptrmtr:
+                
                 inc si
                 inc cx
                 cmp cx,ECRAX            ;ate ao fim do ecra     
