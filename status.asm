@@ -1,4 +1,5 @@
-print_status proc
+
+    print_status proc
         
         push ax
         push cx
@@ -42,7 +43,8 @@ print_status proc
         pop si
         pop dx       
         pop cx
-        pop ax
+        pop ax 
+        
         ret  
     endp 
     
@@ -67,24 +69,36 @@ print_status proc
             push dx
         
         dec cx
-        jz endlp1_prtint
+        jz if1_prtint
         or ax,ax
-        jnz loop1_prtint
+        jz endlp1_prtint
+        jmp loop1_prtint
         
         endlp1_prtint:
+            
+            push 48     ;'0'
+            dec cx
+        jnz endlp1_prtint
         
-        add cx , [bp - 2]   ;numero de char para dar print 
+        if1_prtint:
+        mov cx , [bp - 2]   ;numero de char para dar print 
         
         loop2_prtint:
             
             pop ax
-            call co
-            dec cx
+            ;xchg al , ah
+            call co 
+            dec cx 
+            ;jz endlp2_prtint
+            ;mov al,ah
+            ;call co
+            ;dec cx
         jnz loop2_prtint        
+        endlp2_prtint:
         
         pop bx
         pop dx
         pop cx
         pop bp
         ret               
-    endp 
+    endp
