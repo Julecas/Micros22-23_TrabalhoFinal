@@ -44,6 +44,49 @@ start:
     int 21h
      
  ;------------STRINGS------------;
+    
+    ;Ax = num
+    ;cx = numero de char a escrever
+    print_int proc
+        
+        push bp     ;[bp - 2] -> numero de char
+        mov bp,sp
+        
+        push cx
+        push dx 
+        push bx
+        
+        mov bx , 10 
+        
+        loop1_prtint:  
+        
+            xor dx , dx    
+            div bx
+            add dl , '0'
+            push dx
+        
+        dec cx
+        jz endlp1_prtint
+        or ax,ax
+        jnz loop1_prtint
+        
+        endlp1_prtint:
+        
+        add cx , [bp - 2]   ;numero de char para dar print 
+        
+        loop2_prtint:
+            
+            pop ax
+            call co
+            dec cx
+        jnz loop2_prtint        
+        
+        pop bx
+        pop dx
+        pop cx
+        pop bp
+        ret               
+    endp 
 
     ;Si = inicio do numero na str
     ;Cl = num de char =< 5
