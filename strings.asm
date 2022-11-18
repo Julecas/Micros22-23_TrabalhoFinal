@@ -80,9 +80,10 @@ start:
         ret   
     endp
          
-    ;Di = inicio str destino
+     ;Di = inicio str destino
     ;Ax = num
-    ;bh = 0,para terminar str com 0
+    ;bh = 0,para terminar str com 0  
+    ;bl = numero de char
     int_str proc
                  
         push cx
@@ -90,20 +91,22 @@ start:
         push ax
         push bx
         
-        xor bx,bx 
+        ;xor bx,bx 
         mov cx,10
         
-        cnt_intsrt:
-            
-            inc bl
-            xor dx,dx        ;dx tem de ser 0
-            div cx
-            or ax,ax
-            
-        jnz cnt_intsrt 
+        ;cnt_intsrt:
+        ;    
+        ;    inc bl
+        ;    xor dx,dx        ;dx tem de ser 0
+        ;    div cx
+        ;    or ax,ax
+        ;    
+        ;jnz cnt_intsrt 
         
-        dec di
-        add di,bx
+        ;dec di 
+        xor bh , bh;bx = bl 
+        dec bx
+        add di , bx
         pop bx
         
         or bl,bl
@@ -130,6 +133,27 @@ start:
         pop cx
         ret
         
+    endp
+ 
+    ;Di = inicio str terminada em 0
+    ;Ax = valor     
+    cnt_str proc
+            
+        push cx
+        push di
+            
+        mov al,0  ;necessario ?
+        mov cx,-1 ;para contar ao contrario
+            
+        cld 
+        repne scasb                           
+                      
+        mov ax,-1          
+        sub ax, cx  ; ax = -(Cx + 1) 
+        
+        pop di    
+        pop Cx
+        ret
     endp
  
     ;Di = inicio str terminada em 0
