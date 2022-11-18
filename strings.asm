@@ -321,7 +321,7 @@ start:
         
         pop cx
         pop ax
-        
+        ret   
     endp
     
     
