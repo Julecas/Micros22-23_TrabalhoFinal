@@ -2,16 +2,21 @@
 
 data segment
     ; add your data here!
-    pkey db "press any key...$"
+    pkey db "returning in ( )s press any key to continue",0AH,0DH,0
     str_bemVindo db "Bem vindo",0 
     str_jogar db "Jogar",0
     str_exemplos db "Exemplos",0
     str_retomar db "Retomar",0
     str_top5 db "TOP 5",0
     str_creditos db "creditos",0
-    str_sair db "Sair",0   
+    str_sair db "Sair",0
+    str_julio db "Julio Lopes n 62633",0AH,0DH,0 
+    str_martim db "Martim Agostinho n 62964",0  
+
+   
+    time0 db ?  
     
-    CellColor equ 10 ;berde 
+   
     BRANCO equ 15
     ECRAY equ 200
     ECRAX equ 320 
@@ -35,11 +40,15 @@ start:
 
     ;MAIN
    
+    main_loop:
+    
     call set_video 
     
     call printMenu 
     
     call select_op 
+    
+    jmp main_loop
    
     
     
@@ -52,8 +61,127 @@ start:
     mov ax, 4c00h ; exit to operating system.
     int 21h    
     
-    ;ROTINAS
+    ;ROTINAS  
+        
+    ;*****************************************************************
+    ; c_time -check time 
+    ; descricao: rotina que apresenta o tempo com base no relogio do computador
+    ; input -  
+    ; output - CH = hour /  CL = minute / DH = second / DL = 1/100 seconds
+    ; destroi -  
+    ;*****************************************************************
+    c_time proc 
+        
+        mov ah ,2Ch 
+        int 21h ;get system time; 
 
+
+        
+        ret
+    endp c_time 
+    ;returns: AL = 00h if no character available, AL = 0FFh if character is available.
+    imput_status proc
+        
+        
+        mov AH,0Bh
+        INT 21h  ;get input status; 
+               
+        
+        ret
+    endp imput_status
+    
+    
+    ;*****************************************************************
+    ; creditos 
+    ; descricao: rotina que apresenta os credito ao utilizador
+    ; input -  
+    ; output - 
+    ; destroi - ax 
+    ;***************************************************************** 
+    creditos proc
+        
+        push ax
+        push cx
+        push dx
+        push si
+        
+        call set_video ;clear screen
+        
+        mov dl, 9 ;coluna
+        mov dh, 6 ;linha
+        mov si, offset str_julio
+        call print_pos ;print str julio   
+        
+        mov dl, 9
+        mov dh, 10
+        mov si, offset str_martim
+        call print_pos ;print str martim 
+        
+        mov dl, 0 ;(0,0) canto inferior esquerdo
+        mov dh, 0
+        mov si, offset pkey
+        call print_pos ;print str martim
+        
+        call c_time
+        mov al, dh  ;dh senconds /time0 inicio da contagem 
+        add al,10 ;soma 10 segundos ao tempo inicial
+      
+        c_time_creditos_loop:
+        
+        ;mov al, time0 + 15 ; valor maximo de tempo
+        
+        ;sub al, dh; contagem regressiva do tempo
+        
+        ;call c_time ; usa o cx, por isso fiz push e pop a cx
+        
+        ;cmp dh , time0 + 10 
+        
+        
+        ;je fimDoTempo
+        
+        
+        ;push dx
+        ;push cx
+        
+        ;mov dl, 14;
+        ;mov dh, 0
+        
+        ;ax num a escrever
+        ;cx num de carateres a por no ecra
+        
+        ;mov cx, 1;
+        ;call print_pos_int ;print valor do tempo em segunos
+        
+        ;pop cx
+        ;pop dx
+        
+        call c_time ; usa o cx, por isso fiz push e pop a cx
+        
+        cmp dh , al ;compara tempo final com corrente dh corrente/ al- final 
+        je fimDoTempo
+        
+        
+        ;push ax
+        
+        ;call imput_status
+        
+        ;cmp al, 0FFH;       
+        ;je fimDoTempo 
+        
+        ;pop ax
+        
+        jmp c_time_creditos_loop 
+        
+        fimDoTempo:
+        
+        pop si
+        pop dx
+        pop cx
+        pop ax
+        
+        ret
+    endp creditos    
+    
     ;*****************************************************************
     ; im - initialize mouse
     ; descricao: rotina que inicializa o rato
@@ -189,6 +317,60 @@ start:
         ret
         
         ret    
+    endp 
+    ;Ax = num
+    ;cx = numero de char a escrever
+    print_int proc
+        
+        push bp     ;[bp - 2] -> numero de char
+        mov bp,sp
+        
+        push cx
+        push dx 
+        push bx
+        
+        mov bx , 10 
+        
+        loop1_prtint:  
+        
+            xor dx , dx    
+            div bx
+            add dl , '0'
+            push dx
+        
+        dec cx
+        jz if1_prtint
+        or ax,ax
+        jz endlp1_prtint
+        jmp loop1_prtint
+        
+        endlp1_prtint:
+            
+            push 48     ;'0'
+            dec cx
+        jnz endlp1_prtint
+        
+        if1_prtint:
+        mov cx , [bp - 2]   ;numero de char para dar print 
+        
+        loop2_prtint:
+            
+            pop ax
+            ;xchg al , ah
+            call co 
+            dec cx 
+            ;jz endlp2_prtint
+            ;mov al,ah
+            ;call co
+            ;dec cx
+        jnz loop2_prtint        
+        endlp2_prtint:
+        
+        pop bx
+        pop dx
+        pop cx
+        pop bp
+        ret               
     endp
     ;*****************************************************************
     ; co - caracter output
@@ -249,7 +431,32 @@ start:
         pop bx
         pop ax
         ret
-    endp print_pos
+    endp print_pos 
+    ;*****************************************************************
+    ; ppi - print pos inteiros
+    ; descricao: rotina que imprime um inteiro numa posicao do ecra
+    ; input - si - offset da string a imprimir/ dh linha/dl coluna
+    ; output - nenhum
+    ; destroi - nada
+    ;*****************************************************************  
+    print_pos_int proc
+        
+        push ax
+        push bx
+        
+            
+        mov ah , 2  ;cursor na posicao 0,0    
+        mov bh , 0  ;pagina
+        INT 10h
+       
+        mov bl , 0
+        call print_int
+        
+         
+        pop bx
+        pop ax
+        ret
+    endp print_pos_int
     ;*****************************************************************
     ; printf 
     ; descricao: rotina que imprime uma string numa posicao do ecra
@@ -259,6 +466,7 @@ start:
     ;*****************************************************************
     printf proc
     
+        
         or bl,bl
         jz print_0
         
@@ -424,116 +632,122 @@ start:
         loop_select_op:    ;retorna posicao do rato e botoes primidos   xcoor = cx/ ycoord =dx
                             ; bx= 1 left b /bx= 2 right b/ bx= 3 both b 
         
-        call gmp 
-        
-        ;cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
-        ;jne loop_select_op
-        
-        cmp dx, 58                 ;esta compreendido entre as verticais
-        jb notRectJogar         
-        
-        cmp dx, 58+VlenghtRect     
-        ja notRectJogar 
-  
-        cmp cx, HposRectLeft       ;esta compreendido entre as horizontais
-        jb notRectJogar 
-        
-        cmp cx, HposRectLeft+HlenghtRect
-        ja notRectJogar  
-        
-        mov si ,offset str_jogar             ;aqui vai tar a nossa condicao
-        call print_pos                    ;agora serve so de teste
+            call gmp 
+            
+            ;cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
+            ;jne loop_select_op
+            
+            cmp dx, 58                 ;esta compreendido entre as verticais
+            jb notRectJogar         
+            
+            cmp dx, 58+VlenghtRect     
+            ja notRectJogar 
+      
+            cmp cx, HposRectLeft       ;esta compreendido entre as horizontais
+            jb notRectJogar 
+            
+            cmp cx, HposRectLeft+HlenghtRect
+            ja notRectJogar  
+            
+            mov si ,offset str_jogar             ;aqui vai tar a nossa condicao
+            call print_pos                    ;agora serve so de teste
         
         notRectJogar:
         
-        cmp dx, 98                 
-        jb notRectExemplos         
-        
-        cmp dx, 98+VlenghtRect     
-        ja notRectExemplos 
-  
-        cmp cx, HposRectLeft       
-        jb notRectExemplos 
-        
-        cmp cx, HposRectLeft+HlenghtRect
-        ja notRectExemplos  
-        
-        mov si ,offset str_exemplos             ;aqui vai tar a nossa condicao
-        call print_pos                    ;agora serve so de teste
+            cmp dx, 98                 
+            jb notRectExemplos         
+            
+            cmp dx, 98+VlenghtRect     
+            ja notRectExemplos 
+      
+            cmp cx, HposRectLeft       
+            jb notRectExemplos 
+            
+            cmp cx, HposRectLeft+HlenghtRect
+            ja notRectExemplos  
+            
+            mov si ,offset str_exemplos             ;aqui vai tar a nossa condicao
+            call print_pos                    ;agora serve so de teste
         
         notRectExemplos:
         
-        cmp dx, 138                 
-        jb notRectRetomar         
-        
-        cmp dx, 138+VlenghtRect     
-        ja notRectRetomar
-  
-        cmp cx, HposRectLeft       
-        jb notRectRetomar 
-        
-        cmp cx, HposRectLeft+HlenghtRect
-        ja notRectRetomar  
-        
-        mov si ,offset str_retomar             ;aqui vai tar a nossa condicao
-        call print_pos                   ;agora serve so de teste
+            cmp dx, 138                 
+            jb notRectRetomar         
+            
+            cmp dx, 138+VlenghtRect     
+            ja notRectRetomar
+      
+            cmp cx, HposRectLeft       
+            jb notRectRetomar 
+            
+            cmp cx, HposRectLeft+HlenghtRect
+            ja notRectRetomar  
+            
+            mov si ,offset str_retomar             ;aqui vai tar a nossa condicao
+            call print_pos                   ;agora serve so de teste
         
         notRectRetomar: 
         
-        cmp dx, 58                 
-        jb notRectTop5         
-        
-        cmp dx, 58+VlenghtRect     
-        ja notRectTop5 
-  
-        cmp cx, HposRectRight       
-        jb notRectTop5  
-        
-        cmp cx, HposRectRight+HlenghtRect
-        ja notRectTop5   
-        
-        mov si ,offset str_top5             ;aqui vai tar a nossa condicao
-        call print_pos                    ;agora serve so de teste
+            cmp dx, 58                 
+            jb notRectTop5         
+            
+            cmp dx, 58+VlenghtRect     
+            ja notRectTop5 
+      
+            cmp cx, HposRectRight       
+            jb notRectTop5  
+            
+            cmp cx, HposRectRight+HlenghtRect
+            ja notRectTop5   
+            
+            ;rotina que apresenta o top5 
+             mov si ,offset str_top5            ;aqui vai tar a nossa condicao
+            call print_pos                   ;agora serve so de teste
         
         notRectTop5: 
         
-        cmp dx, 98                 
-        jb notRectCreditos         
+            cmp dx, 98                 
+            jb notRectCreditos         
+            
+            cmp dx, 98+VlenghtRect     
+            ja notRectCreditos
+      
+            cmp cx, HposRectRight       
+            jb notRectCreditos  
+            
+            cmp cx, HposRectRight+HlenghtRect
+            ja notRectCreditos   
+            
+            ;funcao que apresenta os creditos
+            call creditos 
+            
+            jmp end_loop_select_op
         
-        cmp dx, 98+VlenghtRect     
-        ja notRectCreditos
   
-        cmp cx, HposRectRight       
-        jb notRectCreditos  
-        
-        cmp cx, HposRectRight+HlenghtRect
-        ja notRectCreditos   
-        
-        mov si ,offset str_creditos             ;aqui vai tar a nossa condicao
-        call print_pos                    ;agora serve so de teste
-        
         notRectCreditos:
         
-        cmp dx, 138                 
-        jb notRectSair         
+            cmp dx, 138                 
+            jb notRectSair         
+            
+            cmp dx, 138+VlenghtRect     
+            ja notRectSair
+      
+            cmp cx, HposRectRight       
+            jb notRectSair 
+            
+            cmp cx, HposRectRight+HlenghtRect
+            ja notRectSair   
+            
+            mov si ,offset str_sair             ;aqui vai tar a nossa condicao
+            call print_pos                    ;agora serve so de teste
+            
+            notRectSair:
+           
+            jmp loop_select_op 
         
-        cmp dx, 138+VlenghtRect     
-        ja notRectSair
-  
-        cmp cx, HposRectRight       
-        jb notRectSair 
+        end_loop_select_op:           
         
-        cmp cx, HposRectRight+HlenghtRect
-        ja notRectSair   
-        
-        mov si ,offset str_sair             ;aqui vai tar a nossa condicao
-        call print_pos                    ;agora serve so de teste
-        
-        notRectSair:
-       
-        jmp loop_select_op             
-        
-        ret    
+           ret    
     endp select_op
     
     
