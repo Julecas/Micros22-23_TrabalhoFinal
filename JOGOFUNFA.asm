@@ -142,7 +142,7 @@ start:
         loop1_pgen:
                 
 
-                call wait_key_press
+                ;call wait_key_press
                 
                 call cell_status
                 or  bl , bl         ;outcome mais provavel
@@ -150,7 +150,8 @@ start:
                 
                     cmp bl , 1
                     jne if1_pgen
-                        mov [di] , 0             
+                        mov [di] , 0
+                        jmp endif_pgen             
                     
                 if1_pgen:
                     mov [di] , 1
@@ -319,19 +320,19 @@ start:
         endlp2_cst:
         
         ;Decide estado da celula 
-        cmp [bp - 8], 0
+        cmp word ptr [bp - 8], 0
         jne if7_cst
             
-            cmp [bp - 2] , 3    ;se a celula estiver morta ve se tem 3 vizinhos
+            cmp word ptr [bp - 2] , 3    ;se a celula estiver morta ve se tem 3 vizinhos
             jne if9_cst
                 mov bl , 2
                 jmp fim_cst
                 
         if7_cst:
         
-        cmp [bp - 2] , 2        ;se estiver viva ve se tem entre 2 e 3 vizinhos
+        cmp word ptr [bp - 2] , 2        ;se estiver viva ve se tem entre 2 e 3 vizinhos
         jb if8_csft
-            cmp [bp - 2] , 3
+            cmp word ptr [bp - 2] , 3
             ja if8_csft
                 if9_cst: 
                 xor bl , bl;ser diferente para criar ou manter poupa ciclos
@@ -1024,4 +1025,3 @@ start:
 ends
 
 end start ; set entry point and stop the assembler.
-
