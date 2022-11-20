@@ -7,10 +7,10 @@
                       ;[bp - 2] -> numero de vizinhos
                       ;[bp - 4] -> lado_cell
         push bp       ;[bp - 6] -> posx max vizinho na matriz
-        mov bp , sp   ;[bp - 8] -> posy max vizinho na matriz 
+        mov bp , sp   ;(nao usei)[bp - 8] -> posy max vizinho na matriz 
                       
         
-        sub sp , 8    ;guardar espaco na stack para as variaveis
+        sub sp , 6    ;guardar espaco na stack para as variaveis
         
         push bx
         push ax
@@ -152,6 +152,7 @@
         pop ax    
         pop bx
         
+        add sp , 6
         pop bp 
         ret
     endp
