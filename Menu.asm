@@ -100,6 +100,9 @@ start:
     ;***************************************************************** 
     creditos proc
         
+        call c_time
+        
+        
         push ax
         push cx
         push dx
@@ -634,8 +637,8 @@ start:
         
             call gmp 
             
-            ;cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
-            ;jne loop_select_op
+            cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
+            jne loop_select_op
             
             cmp dx, 58                 ;esta compreendido entre as verticais
             jb notRectJogar         

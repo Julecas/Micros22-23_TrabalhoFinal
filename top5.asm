@@ -14,7 +14,7 @@ data segment
    
     handler dw ? 
     
-    c equ 6  
+    VlineFile equ 6  
 
 
     
@@ -64,9 +64,15 @@ start:
     ;***************************************************************** 
     proc top5
         
+        push bp 
+        mov bp, sp
+        
+        push 6  ;[bp - 2] -> VlineFile
+        
+        
         push dx
         push ax
-        push cx
+        push cx 
         
         
         call set_video ;clear screen 
@@ -81,13 +87,11 @@ start:
         mov al, 0      ;0 - read \ 1 - write \ 2 read/write  
         call fopen
         
-        push bp 
-        mov bp, sp
+        xor cx,cx;cx = 0
         
-        push 6  ;[bp + 4] -> VlineFile
-        
+            
             readLoop:
-            mov cx, 0
+             
             push cx
             
             ;parametros
@@ -96,79 +100,97 @@ start:
             mov dx, offset str_read
             mov cx, 3 ;number of bytes to read
             call fread
+            
+            mov di, dx
+            add di, cx
+            mov [di], 0
            
             
             mov dl, 1
-            mov dh, [bp + 4]
+            mov dh, [bp - 2]
             mov si, offset str_read ; buffer for data
             call print_pos ;print geracao 1a linha 
             
             ;parametros
-            mov bx, handler
+            ;mov bx, handler
             mov cx, 4 ;number of bytes to read  
             mov dx, offset str_read
-            call fread 
+            call fread
             
+            mov di, dx
+            add di, cx
+            mov [di], 0
             
             mov dl, 6
-            mov dh, [bp + 4]
+            mov dh, [bp - 2]
             mov si, offset str_read ; buffer for data
             call print_pos ;rint cellnumber 1a linha
             
             ;parametros
-            mov bx, handler
+            ;mov bx, handler
             mov dx, offset str_read
             mov cx, 10 ;number of bytes to read
             call fread 
-        
+            
+            mov di, dx
+            add di, cx
+            mov [di], 0
             
             mov dl, 12
-            mov dh, [bp + 4]
+            mov dh, [bp - 2]
             mov si, offset str_read ; buffer for data
             call print_pos ;print player 1a linha 
             
             ;parametros
             mov cx, 8 ;number of bytes to read 
             mov dx, offset str_read
-            mov bx, handler
+            ;mov bx, handler
             call fread
             
+            mov di, dx
+            add di, cx
+            mov [di], 0
             
             mov dl, 23
-            mov dh, [bp + 4]
+            mov dh, [bp - 2]
             mov si, offset str_read ; buffer for data
             call print_pos ;print data 1a linha  
             
             ;parametros
-            mov cx, 9 ;number of bytes to read 
-            mov bx, handler    
+            mov cx, 10 ;number of bytes to read 
+            ;mov bx, handler    
             mov dx, offset str_read
-            call fread
-          
+            call fread 
+            
+            mov di, dx
+            add di, 8
+            mov [di], 0
             
             mov dl, 32
-            mov dh, [bp + 4]
-            mov si, offset str_read ; buffer for data
+            mov dh, [bp - 2]
+            mov si, offset str_read ; buffer for data 
+            
             call print_pos ;print hora 1a linha 
             
             pop cx
             
-            add [bp + 4], 1; new line
+            add [bp - 2], 2; new line
             
+            inc cx
             cmp cx, 4
-            je readLoop
+            jne readLoop
         
-        
-        
-        
-        
-        
-        
-        
+        ;parametros
+        mov dx, offset fileName 
+        mov bx, handler
+        call fclose
         
         pop cx
         pop ax
-        pop dx
+        pop dx 
+        
+        add sp, 2
+        pop bp
         
         ret
     endp top5
@@ -370,6 +392,10 @@ start:
     ; destroi - 
     ;*****************************************************************
     proc fclose
+        push ax
+        push si
+        push bx
+        
         ;close file
         mov ah, 3eh ;close file
         int 21h
@@ -384,6 +410,10 @@ start:
         call printf
         
         fclose_success:
+        
+        pop bx
+        pop si
+        pop ax
         
         ret 
     endp fclose
@@ -420,6 +450,9 @@ start:
     ; destroi - 
     ;*****************************************************************
     proc fread
+        push ax
+        push bx
+        
         ;close file
         mov ah, 3fh ;read file
         int 21h
@@ -434,6 +467,9 @@ start:
         call printf
         
         fread_success:
+        
+        pop bx
+        pop ax
         
         ret 
     endp fread
