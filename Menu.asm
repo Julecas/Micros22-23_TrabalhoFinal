@@ -2,7 +2,7 @@
 
 data segment
     ; add your data here!
-    pkey db "returning in ( )s press any key to continue",0AH,0DH,0
+    pkey db "Press any key to continue...",0AH,0DH,0
     str_bemVindo db "Bem vindo",0 
     str_jogar db "Jogar",0
     str_exemplos db "Exemplos",0
@@ -90,6 +90,60 @@ start:
         ret
     endp imput_status
     
+    ;bx = numero de segundos  
+    ;para o programa x segundos
+    ;Provavelmente tem comportamentos estranhos no emulador
+    ;incerteza -> tempo de espera existe ]bx - 1(seg) +- (incerteza do interrupt) , bx [
+    sleep proc
+        
+        push cx 
+        push dx
+        push ax
+        push bx
+             
+        mov ah , 2ch
+        
+        int 21h
+        mov al , dh
+        
+        lp1_slp:
+        
+                int 21h
+        
+            cmp dh , al     ;enquanto estiver no msm segundo repete
+            je lp1_slp 
+            
+            ;push ax
+            ;mov ah ,6 ;wait for key press                             ;not working :( a cena do key press ou ent sou burro
+            ;int 21h  
+            ;pop ax
+            ;jz fim_slp: ;se o utilizador der press a uma key
+            
+            dec bx
+            jz fim_slp
+            
+                int 21h 
+                mov al , dh
+                
+                
+                ;push ax
+            ;mov ah ,6 ;wait for key press
+            ;int 21h  
+            ;pop ax
+            ;jz fim_slp: ;se o utilizador der press a uma key
+
+                jmp lp1_slp
+            
+        fim_slp:
+        
+        pop bx
+        pop ax
+        pop dx 
+        pop cx
+        ret
+        
+    endp
+    
     
     ;*****************************************************************
     ; creditos 
@@ -125,55 +179,19 @@ start:
         mov si, offset pkey
         call print_pos ;print str martim
         
-        call c_time
-        mov al, dh  ;dh senconds /time0 inicio da contagem 
-        add al,10 ;soma 10 segundos ao tempo inicial
-      
-        c_time_creditos_loop:
         
-        ;mov al, time0 + 15 ; valor maximo de tempo
+        mov bx, 10 ;numero de segundos
+        call sleep ;conta segundos
+        ;c_time_creditos_loop:
         
-        ;sub al, dh; contagem regressiva do tempo
-        
-        ;call c_time ; usa o cx, por isso fiz push e pop a cx
-        
-        ;cmp dh , time0 + 10 
-        
+         
         
         ;je fimDoTempo
         
         
-        ;push dx
-        ;push cx
-        
-        ;mov dl, 14;
-        ;mov dh, 0
-        
-        ;ax num a escrever
-        ;cx num de carateres a por no ecra
-        
-        ;mov cx, 1;
-        ;call print_pos_int ;print valor do tempo em segunos
-        
-        ;pop cx
-        ;pop dx
-        
-        call c_time ; usa o cx, por isso fiz push e pop a cx
-        
-        cmp dh , al ;compara tempo final com corrente dh corrente/ al- final 
-        je fimDoTempo
         
         
-        ;push ax
-        
-        ;call imput_status
-        
-        ;cmp al, 0FFH;       
-        ;je fimDoTempo 
-        
-        ;pop ax
-        
-        jmp c_time_creditos_loop 
+        ;jmp c_time_creditos_loop 
         
         fimDoTempo:
         
