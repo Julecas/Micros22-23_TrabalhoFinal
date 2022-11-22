@@ -33,6 +33,30 @@ start:
     
     mov ax, 4c00h ; exit to operating system.
     int 21h    
+
+    ;espera que nenhum botao do rato esteja a ser pressionado
+    mouse_release proc
+        
+        push ax
+        push bx
+        push cx 
+        push dx   
+        
+        mov ax , 3
+        
+        lp1_msrl:
+            
+            int 33h
+            or bx , bx 
+        jnz lp1_msrl    
+        
+        pop dx
+        pop cx
+        pop bx 
+        pop ax
+        ret
+    endp
+
 ends
     
     ;ROTINAS
@@ -69,5 +93,6 @@ gmp proc
         
     ret
 endp gmp 
-    
+
+
 end start ; set entry point and stop the assembler.
