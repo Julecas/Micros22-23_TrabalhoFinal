@@ -20,7 +20,7 @@ data segment
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
     cell_num dw 0    
-    fator_res db 2             ;Depois de mexer aqui chamar funcao init_matriz_dim
+    fator_res db 1             ;Depois de mexer aqui chamar funcao init_matriz_dim
 
 ends
 
@@ -427,42 +427,44 @@ start:
             
             call get_mouse_pos
             
+            push bx
             cmp bl , 1
             jne endif_fmtr
                 
                 cmp dx , CHARDIM
                 jb endif_fmtr 
                 
-                and dx , ax        ;Isto torna o a posicao do rato num numero divisivel pelo lado_cell
-                and cx , ax   
-                
-                push ax
-                
-                mov ah , 0dh
-                
-                int 10h
-                
-                or al , al 
-                jz if2_fmtr        ;se houver la uma celula  
-                
-                    mov al , 0  
-                    dec cell_num
-                    jmp endif2_fmtr
-                
-                if2_fmtr:
-                    mov al , CellColor
-                    inc cell_num
-                endif2_fmtr:
-                
-                mov bl , lado_cell
-                call print_status
-                call print_quadrado
-                
-                call mouse_release
-                
-                pop ax
+                    and dx , ax        ;Isto torna o a posicao do rato num numero divisivel pelo lado_cell
+                    and cx , ax   
+                    
+                    push ax
+                    
+                    mov ah , 0dh
+                    
+                    int 10h
+                    
+                    or al , al 
+                    jz if2_fmtr        ;se houver la uma celula  
+                    
+                        mov al , 0  
+                        dec cell_num
+                        jmp endif2_fmtr
+                    
+                    if2_fmtr:
+                        mov al , CellColor
+                        inc cell_num
+                    endif2_fmtr:
+                    
+                    mov bl , lado_cell
+                    call print_status
+                    call print_quadrado
+                    
+                    call mouse_release
+                    
+                    pop ax
             endif_fmtr:
-                       
+            
+            pop bx           
             cmp bl , 2 ;TEMPORARIO usa botao 2 para sair
             je fim_fmtr:
         jmp loop1_fmtr
