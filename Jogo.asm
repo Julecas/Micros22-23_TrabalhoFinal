@@ -20,7 +20,7 @@ data segment
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
     cell_num dw 0    
-    fator_res db 3              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    fator_res db 2             ;Depois de mexer aqui chamar funcao init_matriz_dim
 
 ends
 
@@ -139,16 +139,9 @@ start:
         sub sp , 2             
         mov word ptr [bp - 2] , 0
         
-                              
-        ;ler pixel 
-        ;get_status 
-        ;atualizar
-        ;repetir
-        
         push dx
         push cx
         push bx
-        ;push ax
         push si
         push di
         
@@ -157,29 +150,28 @@ start:
         xor ax , ax
         mov al , lado_cell 
         
-        ;mov cell_num , 0
-        
         xor cx , cx 
-        ;xor ax , ax 
         mov dx , CHARDIM 
           
         loop1_pgen:
+                  
+                call cell_status                                 
                 
-
-                ;call wait_key_press
+                ;se = 0 nao faz nada
+                ;else if = 1 morre
+                ;else criar uma celula
                 
-                call cell_status 
-                or  bl , bl         ;outcome mais provavel
+                or  bl , bl             ;outcome mais provavel   
                 jz endif_pgen
                 
-                    cmp bl , 1
+                    cmp bl , 1          ;celula morre
                     jne if1_pgen
                         mov [di] , 0 
                         dec cell_num  
                         inc [bp - 2]
                         jmp endif_pgen             
                     
-                if1_pgen:
+                if1_pgen:               ;criar celula
                     mov [di] , 1  
                     inc [bp - 2]
                     inc cell_num
@@ -187,7 +179,7 @@ start:
                 endif_pgen:
             inc di
             add cx , ax
-            cmp cx , ECRAX ;- lado_cell;matrizX
+            cmp cx , ECRAX ;- lado_cell
             jb loop1_pgen 
             
             xor cx , cx    
@@ -206,11 +198,11 @@ start:
         mov ax , [bp - 2]
         pop di
         pop si
-        ;pop ax
         pop bx
         pop cx
         pop dx
-        add sp , 2
+        
+        add sp , 2;variavel local
         pop bp
         ret
                               
@@ -222,7 +214,6 @@ start:
     ;Bl = resultado , 0 -> nao muda; 1 -> cell morre; 2 -> cell criada
     ;posicao do pixel do canto superior esquerdo da celula
     cell_status proc
-        ;FALTA LER O ESTADO INICIAL DA CELULA
         
                       ;[bp - 2] -> numero de vizinhos
                       ;[bp - 4] -> lado_cell
@@ -232,7 +223,6 @@ start:
         
         sub sp , 8    ;guardar espaco na stack para as variaveis
         
-        ;push bx
         push ax
         push cx
         push dx
@@ -246,13 +236,6 @@ start:
         
         mov [bp - 6] , cx        ;limite horizontal
         add [bp - 6] , ax        ; ax = [bp - 4] = lado_cell            
-        
-        ;mov [bp - 8] , dx       ;limite vertical
-        ;add [bp - 8] , [bp - 4] 
-        
-        ;sub dx , CHARDIM    ;para nao contar com a linha de char
-        
-        ;verificar cantos
         
         cmp dx , CHARDIM        ;ver se esta no lado de cima
         jne if1_cst
@@ -277,7 +260,6 @@ start:
         if4_cst:
         ;end verificar cantos
         
-        ;LEBRAR QUE CAGUEI OS VALORES EM CX E DX
         mov bh , 10000000b
         
         mov ah , 0Dh
@@ -376,10 +358,9 @@ start:
         fim_cst:
         
         pop cx
-        pop ax    
-        ;pop bx
+        pop ax 
         
-        add sp , 8
+        add sp , 8  ;variaveis locais(4*8)
         pop bp 
         ret
     endp
@@ -437,21 +418,17 @@ start:
         not ax      ; bx = FFFFh
         
         xor cx , cx
-        mov cl , fator_res
-        ;dec cl
+        mov cl , fator_res 
+
         shr ax , cl
         shl ax , cl ;fica com 0 nos bits que eu nao quero ler, 
         
         loop1_fmtr:
             
-            ;call set_video
-            
             call get_mouse_pos
             
             cmp bl , 1
             jne endif_fmtr
-                
-                ;sub dx , CHARDIM  
                 
                 cmp dx , CHARDIM
                 jb endif_fmtr 
@@ -486,7 +463,7 @@ start:
                 pop ax
             endif_fmtr:
                        
-            cmp bl , 2 ;      ;TEMPORARIO
+            cmp bl , 2 ;TEMPORARIO usa botao 2 para sair
             je fim_fmtr:
         jmp loop1_fmtr
         fim_fmtr:  
@@ -515,12 +492,9 @@ start:
         mov lado_cell , 1
         shl lado_cell , cl        ;o lado da celula vai ser 2^(fator_res)
         
-        ;xor dx , dx
-        
         mov ax , ECRAY
         sub ax , CHARDIM
-        div lado_cell 
-        ;xor ah , ah     ;limpa o resto da divisao   (nao [e preciso)
+        div lado_cell
         
         mov matrizY , ax
         
@@ -656,8 +630,7 @@ start:
                 
                 or [si],0
                 jz if1_ptrmtr
-                    
-                   ;HLT
+
                     call print_quadrado            
                 
                 jmp endif1_ptrmtr
@@ -688,7 +661,7 @@ start:
     ;al = cor
     ;bx = largura
     print_quadrado proc
-        ;push ax
+
         push bp
         
         mov bp,sp
@@ -725,8 +698,7 @@ start:
     wait_key_press proc
        
         push ax
-           
-        ; wait for any key....    
+               
         mov ah, 1
         int 21h
            
@@ -735,6 +707,7 @@ start:
         
     endp 
     
+    ;tambem serve como clear screen
     set_video proc
         
         push ax
@@ -785,7 +758,6 @@ start:
     endp
          
     
- 
     ;Di = inicio str terminada em 0
     ;Ax = valor     
     cnt_str proc
@@ -925,8 +897,7 @@ start:
         pop cx
         pop ax
         ret
-         
-         
+   
     endp
     
     
@@ -1087,7 +1058,7 @@ start:
 
 ;------------STRINGS------------;  
     
-;dx = linhas
+    ;dx = linhas
     ;cx = colunas
     ;al = cor
     ;bh = altura
@@ -1126,12 +1097,13 @@ start:
         jb lp_prret
         
 
-        pop bx
-        ;pop ax               
+        pop bx               
         pop bp
         ret 4
     endp
-
+      
+    ;--------RATO--------;  
+      
     ;*****************************************************************
     ; im - initialize mouse
     ; descricao: rotina que inicializa o rato
@@ -1143,8 +1115,7 @@ start:
         
         mov ax, 0;initialize mouse
         int 33h
-        
-            
+           
         ret
     endp 
     ;*****************************************************************
@@ -1189,6 +1160,7 @@ start:
         ret
     endp
     
+    ;--------RATO--------;
     
 ends
 
