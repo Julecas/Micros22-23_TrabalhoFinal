@@ -2,7 +2,7 @@
 
 data segment
     ; add your data here!
-    pkey db "Press any key to continue...",0AH,0DH,0
+    pkey db "returning in ( )s press any key..",0AH,0DH,0
     str_bemVindo db "Bem vindo",0 
     str_jogar db "Jogar",0
     str_exemplos db "Exemplos",0
@@ -14,7 +14,7 @@ data segment
     str_martim db "Martim Agostinho n 62964",0  
 
    
-    time0 db ?  
+    time0 db ?                         
     
    
     BRANCO equ 15
@@ -61,7 +61,41 @@ start:
     mov ax, 4c00h ; exit to operating system.
     int 21h    
     
-    ;ROTINAS  
+    ;ROTINAS 
+    
+    
+    ;*****************************************************************
+    ; showMousep - show mouse position   
+    ; descricao: rotina que imprime a posicao do rato
+    ; input -  
+    ; output - 
+    ; destroi -  
+    ;*****************************************************************  
+    
+    showMousep proc 
+        
+        call im    ;inicializa rato
+        call gmp   
+        
+        ;parametros
+        ;cx num carateres a escrever
+        ;ax numero a escrever
+        ;dh linha/dl coluna
+        
+        mov ax,cx ;x coord
+        mov dh, 0
+        mov dl, 20
+        call print_pos_int
+        
+        mov ax,dx ;y coord
+        mov dh, 0
+        mov dl, 20
+        call print_pos_int
+        
+        
+        
+        ret
+    endp showMousep    
         
     ;*****************************************************************
     ; c_time -check time 
@@ -90,11 +124,11 @@ start:
         ret
     endp imput_status
     
-    ;bx = numero de segundos  
+     ;bx = numero de segundos  
     ;para o programa x segundos
     ;Provavelmente tem comportamentos estranhos no emulador
     ;incerteza -> tempo de espera existe ]bx - 1(seg) +- (incerteza do interrupt) , bx [
-    sleep proc
+    sleep_key_press proc
         
         push cx 
         push dx
@@ -106,35 +140,55 @@ start:
         int 21h
         mov al , dh
         
-        lp1_slp:
-        
+        lp1_slpkp:
+                
+                push dx
+                push ax 
+                
+                mov ah , 6
+                mov dl , 255
+                int 21h     
+                                                      
+                pop ax
+                pop dx
+                
+                jnz fim_slpkp    ;verifica por keypress
+                
                 int 21h
         
             cmp dh , al     ;enquanto estiver no msm segundo repete
-            je lp1_slp 
+            je lp1_slpkp
             
-            ;push ax
-            ;mov ah ,6 ;wait for key press                             ;not working :( a cena do key press ou ent sou burro
-            ;int 21h  
-            ;pop ax
-            ;jz fim_slp: ;se o utilizador der press a uma key
+            ;push bx
+            push dx
+            push cx 
+            push ax
             
             dec bx
-            jz fim_slp
+            ;parametros
+            ;cx num carateres a escrever
+            ;ax numero a escrever
+            ;dh linha/dl coluna
+            mov cx, 1 
+            mov ax,bx
+            mov dl, 14               
+            mov dh, 0
+            call print_pos_int
+  
+            
+            pop ax
+            pop cx
+            pop dx
+            ;pop bx
+              
+            or bx , bx
+            jz fim_slpkp
             
                 int 21h 
                 mov al , dh
-                
-                
-                ;push ax
-            ;mov ah ,6 ;wait for key press
-            ;int 21h  
-            ;pop ax
-            ;jz fim_slp: ;se o utilizador der press a uma key
-
-                jmp lp1_slp
+                jmp lp1_slpkp
             
-        fim_slp:
+        fim_slpkp:
         
         pop bx
         pop ax
@@ -143,7 +197,6 @@ start:
         ret
         
     endp
-    
     
     ;*****************************************************************
     ; creditos 
@@ -172,28 +225,17 @@ start:
         mov dl, 9
         mov dh, 10
         mov si, offset str_martim
-        call print_pos ;print str martim 
-        
-        mov dl, 0 ;(0,0) canto inferior esquerdo
-        mov dh, 0
-        mov si, offset pkey
         call print_pos ;print str martim
         
+        mov dl, 0
+        mov dh, 0
+        mov si, offset pkey
+        call print_pos ;print str pkey  
+
         
-        mov bx, 10 ;numero de segundos
-        call sleep ;conta segundos
-        ;c_time_creditos_loop:
+        mov bx, 10 ;10 segundos de espera
+        call sleep_key_press ;funcao de espera 
         
-         
-        
-        ;je fimDoTempo
-        
-        
-        
-        
-        ;jmp c_time_creditos_loop 
-        
-        fimDoTempo:
         
         pop si
         pop dx
@@ -462,20 +504,24 @@ start:
     ;*****************************************************************  
     print_pos_int proc
         
-        push ax
         push bx
+        push ax
         
             
         mov ah , 2  ;cursor na posicao 0,0    
         mov bh , 0  ;pagina
         INT 10h
-       
+        
+ 
+        pop ax
+        ;add sp , 2  ;macumba
+        
         mov bl , 0
         call print_int
         
-         
         pop bx
-        pop ax
+         
+        
         ret
     endp print_pos_int
     ;*****************************************************************
@@ -771,67 +817,7 @@ start:
            ret    
     endp select_op
     
-    ;bx = numero de segundos  
-    ;para o programa x segundos
-    ;Provavelmente tem comportamentos estranhos no emulador
-    ;incerteza -> tempo de espera existe ]bx - 1(seg) +- (incerteza do interrupt) , bx [
-    sleep_key_press proc ; Falta printpos
-        
-        push cx 
-        push dx
-        push ax
-        push bx
-             
-        mov ah , 2ch
-        
-        int 21h
-        mov al , dh
-        
-        lp1_slpkp:
-                
-                push dx
-                push ax 
-                
-                mov ah , 6
-                mov dl , 255
-                int 21h     
-               
-                pop ax
-                pop dx
-                
-                jnz fim_cslp    ;verifica por keypress
-                
-                int 21h
-        
-            cmp dh , al     ;enquanto estiver no msm segundo repete
-            je lp1_slpkp
-            push cx 
-            push ax
-            
-            dec bx
-            
-            mov ax , bx
-            mov cx , 1
-            call print_int
-            
-            pop ax
-            pop cx  
-            or dx , dx
-            jz fim_slpkp
-            
-                int 21h 
-                mov al , dh
-                jmp lp1_slpkp
-            
-        fim_slpkp:
-        
-        pop bx
-        pop ax
-        pop dx 
-        pop cx
-        ret
-        
-    endp
+    
     
 ends    
 end start ; set entry point and stop the assembler.
