@@ -20,8 +20,8 @@ data segment
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
     cell_num dw 0    
-    fator_res db 1              ;Depois de mexer aqui chamar funcao init_matriz_dim
-    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)
+    fator_res db 5              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)
 
 ends
 
@@ -228,7 +228,6 @@ start:
         push bp       ;[bp - 6] -> posx max vizinho na matriz
         mov bp , sp   ;[bp - 8] -> estado inicial da celula 
                       
-        
         sub sp , 8    ;guardar espaco na stack para as variaveis
         
         push ax
@@ -442,8 +441,10 @@ start:
                 cmp dx , CHARDIM
                 jb endif_fmtr 
                 
+                    and cx , ax
                     and dx , ax        ;Isto torna o a posicao do rato num numero divisivel pelo lado_cell
-                    and cx , ax   
+                      
+                    add dx , CHARDIM    ;se dx = 0 assim desenha o quadrado depois dos char
                     
                     push ax
                     
