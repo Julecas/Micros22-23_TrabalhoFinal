@@ -20,7 +20,8 @@ data segment
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
     cell_num dw 0    
-    fator_res db 1             ;Depois de mexer aqui chamar funcao init_matriz_dim
+    fator_res db 1              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)
 
 ends
 
@@ -34,14 +35,15 @@ start:
     mov ax, data
     mov ds, ax
     mov es, ax
-    
+        
     call init_matriz_dim
     
     call init_mouse
     
     ;glider PARA TESTE
     mov si , offset matriz_cell
-    add si , 4
+    add si , 4 
+    
     ;add si , matrizX
     ;add si , matrizX
     ;add si , matrizX
@@ -78,9 +80,11 @@ start:
     
     
     mov ax, 4c00h ; exit to operating system.
-    int 21h
-     
-    mov cx , 4000
+    int 21h          
+    
+    ;LIXO PARA DEBUG; 
+    
+    mov cx , 3840
     mov si , offset matriz_cell
     loop1_main:
         
@@ -89,9 +93,10 @@ start:
         jz if1_main
         test cx,1
         jz loop1_main
-        mov [si],0  
+        mov [si],1  
     jmp loop1_main
     if1_main:
+    ;LIXO PARA DEBUG;
     
     game_loop proc
         
@@ -104,7 +109,8 @@ start:
         mov si , offset matriz_cell  
         call print_matriz
         mov di , offset matriz_cell  
-        mov gen_num , 0
+        mov gen_num , 0  
+        
         loop1_gl: 
             
             call set_video ;limpar o ecra
@@ -119,7 +125,9 @@ start:
             call print_matriz  
             
             call prox_gen
-            call wait_key_press 
+            
+            call wait_key_press ;temporario ? 
+            
             inc gen_num
             
         or ax , ax     
@@ -621,8 +629,6 @@ start:
                           
         push bx
         push ax
-        
-        dec dx  ;conta a partir de 0
         
         mov al , CellColor
         
@@ -1143,6 +1149,10 @@ start:
     mouse_release proc
         
         push ax
+        mov al , rato_preso
+        or al , al  
+        jz fim_msrl 
+        
         push bx
         push cx 
         push dx   
@@ -1158,11 +1168,12 @@ start:
         pop dx
         pop cx
         pop bx 
-        pop ax
+        fim_msrl:pop ax
         ret
     endp
     
     ;--------RATO--------;
+    
     
 ends
 
