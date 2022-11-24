@@ -184,6 +184,11 @@ start:
         ret
     endp 
     
+    
+    ;NOTA ANTES DE CHEGAR AQUI
+    ;mov di , offset matriz_cell
+    ;call load_matriz
+    ;se nao escreve a gen anterior
     saveGame proc
         
         push bp
@@ -239,6 +244,13 @@ start:
         ;mov bl , ' '
         ;call del_char
         ;Apartidaqui a string esta pronta 
+        
+        ;isto tem de ser feito antes
+        ;mov di , offset matriz_cell
+        ;call load_matriz
+        
+        ;agr so falta criar destrutivamente o ficheiro
+        ;e escrever a fator_res(no primeiro byte) e matriz_cell no resto ficheiro
             
         pop di
         pop si
