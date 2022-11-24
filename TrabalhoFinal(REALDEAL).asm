@@ -27,8 +27,8 @@ data segment
     matrizX dw 0  
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
-    cell_num dw 0    
-    fator_res db 2              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    cell_num dw 0   
+    fator_res db 2 ; 4por4 neste caso ;Depois de mexer aqui chamar funcao init_matriz_dim
     rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)
    
     handler dw ? 
@@ -182,6 +182,7 @@ start:
         ret
         
     endp 
+     
      game_loop proc
         
         push cx 
@@ -206,11 +207,30 @@ start:
             xor bh , bh 
             mov Bl , lado_cell
             mov si , offset matriz_cell  
-            call print_matriz  
+            call print_matriz 
+            
+             ;call mouse_release
+            call gmp 
+            
+            cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
+            jne loop_select_op
+            
+            cmp dx, 58                 ;esta compreendido entre as verticais
+            jb notRectJogar         
+            
+            cmp dx, 58+VlenghtRect     
+            ja notRectJogar 
+      
+            cmp cx, HposRectLeft       ;esta compreendido entre as horizontais
+            jb notRectJogar 
+            
+            cmp cx, HposRectLeft+HlenghtRect
+            ja notRectJogar  
+    
             
             call prox_gen
             
-            call wait_key_press ;temporario ? 
+            call wait_key_press ;temporario ? debug
             
             inc gen_num
             
@@ -665,13 +685,27 @@ start:
     push cx
     push dx
           
+    
     call init_matriz_dim
    
     ;glider PARA TESTE
     mov si , offset matriz_cell
     add si , 4 
     
-    call set_video
+    call set_video 
+    
+    ;funcao que desenha um quadrado/retangulo
+    ;dx = Linha do canto superior esquerdo
+    ;cx = Coluna do canto superior esquerdo
+    ;al = cor
+    ;push 1 = tamanho vertical
+    ;push 2 = tamanho horizontal
+    mov dx, 0
+    mov cx, 270
+    mov al, BRANCO
+    push 8
+    push 35
+    call draw_rect  ;rect top 5
     
     call print_status 
     mov di , offset matriz_cell
@@ -1214,7 +1248,11 @@ start:
         push ax
         
         mov ax, 0;initialize mouse
+        int 33h 
+        
+        mov ax, 1 ;show mouse pointer
         int 33h
+
         
         pop ax    
         ret
@@ -1243,7 +1281,10 @@ start:
         push ax
         
         mov ax,13h 
-        int 10h
+        int 10h 
+        
+        mov ax, 1 ;show mouse pointer
+        int 33h
         
         pop ax
         ret
@@ -1651,8 +1692,16 @@ start:
     
     proc select_op
         
+        push dx
+        push bx
+        push ax
+        push si
+        
+        
         call im     ;incializa o rato
-        xor  dx, dx  ;para meter os prints todos em (0,0)
+        xor  dx, dx  ;para meter os prints todos em (0,0)    
+        
+        
                               
         loop_select_op:    ;retorna posicao do rato e botoes primidos   xcoor = cx/ ycoord =dx
                             ; bx= 1 left b /bx= 2 right b/ bx= 3 both b 
@@ -1661,124 +1710,209 @@ start:
             
             cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
             jne loop_select_op
+                    ;quarto push                                  ;segundo push
+            ;[bp + 4] pos horizontal canto sup esquerdo [bp + 8] tamanho horizontal 
+            ;[bp + 6] pos vertical canto sup esquerdo   [bp + 10] tamanho vertical
+                    ;terceiro push                                ;primeiro push
+            ;HITBOX RECT JOGO
             
-            cmp dx, 58                 ;esta compreendido entre as verticais
-            jb notRectJogar         
+            push VlenghtRect
+            push HlenghtRect
+            push 58
+            push HposRectLeft
+            call m_hitbox
             
-            cmp dx, 58+VlenghtRect     
-            ja notRectJogar 
-      
-            cmp cx, HposRectLeft       ;esta compreendido entre as horizontais
-            jb notRectJogar 
+            cmp ax, 0
             
-            cmp cx, HposRectLeft+HlenghtRect
-            ja notRectJogar  
+            je notRectJogar
             
-                                        ;aqui vai tar a nossa condicao
             call jogo
             
-            jmp end_loop_select_op                    ;agora serve so de teste
-        
+            jmp end_loop_select_op 
+            
         notRectJogar:
         
-            cmp dx, 98                 
-            jb notRectExemplos         
+            ;[bp + 4] tamanho vertical   [bp + 8] pos vertical canto sup esquerdo
+            ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
-            cmp dx, 98+VlenghtRect     
-            ja notRectExemplos 
-      
-            cmp cx, HposRectLeft       
-            jb notRectExemplos 
+            ;HITBOX RECT EXEMPLOS
             
-            cmp cx, HposRectLeft+HlenghtRect
-            ja notRectExemplos  
+            push VlenghtRect
+            push HlenghtRect
+            push 98
+            push HposRectLeft
+            call m_hitbox
+            
+            cmp ax, 0
+            
+            je notRectExemplos
             
             mov si ,offset str_exemplos             ;aqui vai tar a nossa condicao
-            call print_pos                    ;agora serve so de teste
-        
+            call print_pos                   ;agora serve so de teste 
+            
+            jmp end_loop_select_op 
+            
         notRectExemplos:
         
-            cmp dx, 138                 
-            jb notRectRetomar         
+            ;[bp + 4] tamanho vertical   [bp + 8] pos vertical canto sup esquerdo
+            ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
-            cmp dx, 138+VlenghtRect     
-            ja notRectRetomar
-      
-            cmp cx, HposRectLeft       
-            jb notRectRetomar 
+            ;HITBOX RECT RETOMAR
             
-            cmp cx, HposRectLeft+HlenghtRect
-            ja notRectRetomar  
+            push VlenghtRect
+            push HlenghtRect
+            push 138
+            push HposRectLeft
+            call m_hitbox
+            
+            cmp ax, 0
+            
+            je notRectRetomar
             
             mov si ,offset str_retomar             ;aqui vai tar a nossa condicao
-            call print_pos                   ;agora serve so de teste
+            call print_pos                   ;agora serve so de teste 
+            
+            jmp end_loop_select_op 
         
         notRectRetomar: 
-        
-            cmp dx, 58                 
-            jb notRectTop5         
             
-            cmp dx, 58+VlenghtRect     
-            ja notRectTop5 
-      
-            cmp cx, HposRectRight       
-            jb notRectTop5  
+            ;[bp + 4] tamanho vertical   [bp + 8] pos vertical canto sup esquerdo
+            ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
-            cmp cx, HposRectRight+HlenghtRect
-            ja notRectTop5   
+            ;HITBOX RECT TOP5
             
-            call top5
+            push VlenghtRect
+            push HlenghtRect
+            push 58
+            push HposRectRight
+            call m_hitbox
+            
+            cmp ax, 0
+            
+            je notRectTop5
+                      
+            call top5                  
             
             jmp end_loop_select_op
         
         notRectTop5: 
         
-            cmp dx, 98                 
-            jb notRectCreditos         
+            ;[bp + 4] tamanho vertical   [bp + 8] pos vertical canto sup esquerdo
+            ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
-            cmp dx, 98+VlenghtRect     
-            ja notRectCreditos
-      
-            cmp cx, HposRectRight       
-            jb notRectCreditos  
+            ;HITBOX RECT CREDITOS
             
-            cmp cx, HposRectRight+HlenghtRect
-            ja notRectCreditos   
+            push VlenghtRect
+            push HlenghtRect
+            push 98
+            push HposRectRight
+            call m_hitbox
             
-            ;funcao que apresenta os creditos
-            call creditos 
+            cmp ax, 0
+            
+            je notRectCreditos
+                      
+            call creditos                  
             
             jmp end_loop_select_op
         
   
         notRectCreditos:
-        
-            cmp dx, 138                 
-            jb notRectSair         
             
-            cmp dx, 138+VlenghtRect     
-            ja notRectSair
-      
-            cmp cx, HposRectRight       
-            jb notRectSair 
+            ;[bp + 4] tamanho vertical   [bp + 8] pos vertical canto sup esquerdo
+            ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
-            cmp cx, HposRectRight+HlenghtRect
-            ja notRectSair   
+            ;HITBOX RECT SAIR
             
-            mov si ,offset str_sair             ;aqui vai tar a nossa condicao
-            call print_pos
+            push VlenghtRect
+            push HlenghtRect
+            push 138
+            push HposRectRight
+            call m_hitbox
+            
+            cmp ax, 0
+            
+            je notRectSair
             
             mov ax, 4c00h ; exit to operating system.
-            int 21h                     ;agora serve so de teste
+            int 21h                 
+            
+            jmp end_loop_select_op
+            
             
             notRectSair:
            
             jmp loop_select_op 
         
         end_loop_select_op:           
-        
+           
+        pop si
+        pop ax
+        pop bx
+        pop dx
+           
            ret    
-    endp select_op
+    endp select_op   
+    
+    
+    ;*****************************************************************
+    ; m_hitbox - mouse hitbox
+    ; descricao: rotina que verifica se o rato esta numa dada posicao
+    ; input - push 1 tamanho vertical/push 2 tamanho horizontal/push 3 posicao do canto sup esquerdo/push 4 posicao canto inferior direito 
+    ; output - 
+    ; destroi -  
+    ;***************************************************************** 
+    
+    m_hitbox proc
+     ;call mouse_release
+            
+           
+            push bp
+            mov bp, sp
+            
+            push bx
+            push dx
+            push cx
+        
+            ;[bp + 4] pos horizontal canto sup esquerdo [bp + 8] tamanho horizontal 
+            ;[bp + 6] pos vertical canto sup esquerdo   [bp + 10] tamanho vertical
+            
+            
+            cmp dx, [bp + 6]       ;esta compreendido entre as verticais
+            jb notRect        
+            
+            mov bx,[bp + 6]
+            add bx,[bp + 10] 
+            cmp dx, bx     
+            ja notRect 
+      
+            cmp cx, [bp + 4]      ;esta compreendido entre as horizontais
+            jb notRect 
+            
+            
+            mov bx,[bp + 4]
+            add bx,[bp + 8]
+            cmp cx, bx
+            ja notRect
+            
+            
+            mov ax, 1;já esta esta dentro?(foi o q ela disse :^))
+            
+            jmp rect
+            
+            notRect:  
+            
+            mov ax, 0
+            
+            rect:
+            
+            pop cx
+            pop dx
+            pop bx
+            pop bp
+            
+            ret 8                          
+    endp m_hitbox
     
     ;------------STRINGS------------;
 
