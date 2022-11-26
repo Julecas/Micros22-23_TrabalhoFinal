@@ -370,7 +370,36 @@ co proc
     ret
 co endp
 ends
-
+;escreve "File error num:XXXXX",
+    ;sendo XXXXX -> o numero do erro em decimal  
+    ;recebe em ax o numero do erro
+    print_file_error proc 
+        
+        push cx 
+        push dx
+        push bx
+        push si
+        push ax 
+        
+        mov AH ,2
+        xor dx ,dx 
+        xor bh , bh;cursor na posicao 0,0
+        INT 10h     
+        
+        mov si , offset str_file_error
+        mov bh , 0
+        call printf
+        
+        pop ax 
+        mov cx , 5
+        call print_int;escreve o numero do erro em decimal
+        
+        pop si
+        pop bx
+        pop dx
+        pop cx
+        ret
+    endp
 
 
 end start ; set entry point and stop the assembler.
