@@ -11,7 +11,10 @@ data segment
     fileNameTop5 db "c:\gameOfLife\TOP5.txt",0 
     str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0
     str_read db 20 dup(?) ;buffer de leitura 
-    str_log1 db "20221103:145123:canudo    :102:0256",0
+    
+    ;exemplos de logs para debugg
+    
+    str_log1 db "20221103:145123:canudo    :102:0256",0       ;cell number e offset + 30
     str_log2 db "20221005:155223:bazoro    :162:0456",0
     str_log3 db "20220907:105125:munaldo   :121:0756",0
     str_log4 db "20220808:115113:crabrezo  :245:0356",0
@@ -19,7 +22,7 @@ data segment
     
     
     
-    lowerCells dw dup(?) ;quem tem menos cells no top 5
+    lowerCells dw ? ;quem tem menos cells no top 5
    
     handler dw ? 
     
@@ -53,52 +56,218 @@ start:
     
     
     ;ROTINAS 
-    
     ;*****************************************************************
-    ; writetop5 
-    ; descricao: rotina que escreve no top 5 com base nos logs
+    ; writeTop5  
+    ; descricao: rotina que escreve no top 5 um novo elemento
     ; input -  
     ; output - 
-    ; destroi - ax 
+    ; destroi -  
     ;***************************************************************** 
-    proc writetop5 
-     
-    
-     
-     
+    proc writeTop5
         
-    ;input -  bx - file handler 
-    ;cx:dx offset from origin of new, file position  (cx-linha no ficheiro\ dx- coluna no fichéiro)
-    ;al 0,1,2 start of file ,current file position ,end of file (respetivamente)   
-    
-    mov dx, offset str_read     
-    mov bx, handle  
-    mov cx,0 ; linha 0 
-    mov dx,4 ; col 4 
-    mov al,0 ;start of file
-    writeTop5Lp:
-    
-    call seek ;procura o numero de cells no ficheiro top5.txt 
-    
-    push cx
-    
-    mov cx, 4 ;bytes to read
-    
-    call read
-    
-    pop cx  
-    
-    
-    ;vou ter de converter mum int
-    ;cmp dx,     
+        call tlcmp
         
-    jmp writeTop5Lp    
+        cmp cx, 4
+        je endWriteTop5 ;isto signifca que o gajo dos logs e tao mau tao mau
+                        ;que nos so vamos cagar nele mesmo
+        
+        mov dx, offset fileNameTop5      
+        mov al, 1   ;0 - read \ 1 - write \ 2 read/write  
+        call fopen  
+        
+        push cx
+        
+        mov bx, handler  
+        mov dx,0 ; coluna 1          CURSOR DO FICHEIRO NO FIM A APONTAR PARA CELL NUMBER
+        mov cx,4 ; linha 5
+        mov al,0 ;start of file
+        call seek
+        
+        pop cx                 
+        
+        cmp cx,3          ;TEMOS QUE SUBSTITUIR O QUINTO (ULTIMO)
+        jne not3
+        
+        mov dx , offset ;str_log_concatenada  no nosso formato top5.txt
+        call fwrite
+                        
+        not3:
+        cmp cx,2   ;TEMOS QUE SUBSTITUIR O QUARTO
+        jne not2
+        
+      « 
+         
+        mov cx, 3
+        call seek
+        
+        mov dx , offset ;str_log_concatenada  no nosso formato top5.txt
+        call fwrite
+                         
+        not2:      ;TEMOS QUE SUBSTITUIR O TERCEIRO
+        cmp cx,1
+        jne not1
+         
+        mov cx, 2
+        call seek
+        
+        mov dx , offset ;str_log_concatenada  no nosso formato top5.txt
+        call fwrite
+        
+                          
+        not1:       ;TEMOS QUE SUBSTITUIR O SEGUNDO
+        cmp cx,0
+        jne not0
+         
+        mov cx, 1
+        call seek
+         
+        mov dx , offset ;str_log_concatenada  no nosso formato top5.txt
+        call fwrite
+                          
+        not0:
+        ;cmp cx,-1 ;reduntante    ;TEMOS QUE SUBSTITUIR O PRIMEIRO
+          
+        xor cx, cx ; cx = 0
+        call seek
+        
+        mov dx , offset ;str_log_concatenada  no nosso formato top5.txt
+        call fwrite
+                          
+        
+        endWriteTop5:
         
         ret
-    endp writetop5    
+    endp writeTop5    
     
     
+    ;*****************************************************************
+    ; tlcmp - top5 log compare 
+    ; descricao: rotina que compara o numero de cells num log com os elementos do top 5
+    ; input -  
+    ; output - cx
+    ;   cx = 4 se o marmanjo nao tinha mais cells que o ultimo (ou seja cagamos nele)
+    ;   cx = 3 se ele era maior que o menor
+    ;   cx = 2 se ele era maior que o quarto
+    ;   cx = 1 se ele era maior que o terceiro
+    ;   cx = 0 se ele for maior que o segundo
+    ;   cx = -1 se o dos logs for o maior O REI DELES TODOS portanto
+    ; destroi -  
+    ;***************************************************************** 
+    proc tlcmp 
+        
+        push bx
+        push dx
+        push ax
+        push si
+        
     
+        mov cx,4  ; linha  5
+     
+        ;SEEK    
+        ;input - bx - file handler 
+        ;cx:dx offset from origin of new, file position  (cx-linha no ficheiro\ dx- coluna no fichéiro)
+        ;al 0,1,2 start of file ,current file position ,end of file (respetivamente)   
+        
+        tlmpcmpLp:
+           
+        mov bx, handler  
+        mov dx,4 ; col 4 
+        mov al,0 ;start of file
+        
+        call seek ;procura o numero de Cells do jogador em ultimo
+        
+        push cx
+        
+        mov cx, 4 ;bytes to read
+        mov dx, offset str_read  
+        call fread
+        
+        
+        ;parametros
+        mov si, offset str_read
+        mov cl, 4
+        call str_int
+        ;result stored in ax (menor numero de cells)
+          
+        mov lowerCells, ax ;menor valor de cells no top5
+        
+        ;parametros
+        mov si, offset str_log1 ;exemplo
+        add si, 30 ;tou a tentar percorrer a string dos logs ate chegar a cell number
+        mov cl, 4                  
+        call str_int
+        ;result stored in ax (menor numero de cells)                  
+         
+        pop cx 
+                          
+        cmp ax, lowerCells  ;se o marmanjo for menor que o menor entao cagamos nele
+        
+        jb endTlcmp
+        
+        dec cx 
+        
+        cmp cx, -1  ;para se o gajo dos logs for realmen O REI
+        je endTlcmp
+                 
+        jmp tlcmpLp:
+        
+        
+        ;AGORA E ASSIM CARALHO OUVE BEM,
+        ;em cx e suposto teres
+        ;cx = 4 se o marmanjo nao tinha mais cells que o ultimo (ou seja cagamos nele)
+        ;cx = 3 se ele era maior que o menor
+        ;cx = 2 se ele era maior que o quarto
+        ;cx = 1 se ele era maior que o terceiro
+        ;cx = 0 se ele for maior que o segundo
+        ;cx = -1 se o dos logs for o maior O REI DELES TODOS portanto
+        
+            
+        
+        endTlcmp:
+        
+        push si
+        push ax
+        push dx
+        push bx
+                                                
+        ret
+    endp tlcmp    
+    
+    ;STRING TO INT
+    ;Si = inicio do numero na str
+    ;Cl = num de char =< 5
+    ;Ax = resultado
+    str_int proc
+        
+        push dx ;inicializar as variaveis
+        push cx
+        push si
+        mov ax,0
+        mov dh,0
+        mov ch,10
+                 
+        str_intLp:
+            
+            mov dl,byte ptr [si];char 
+            or dl,dl
+            jz str_int_end      ;para no fim da string
+            or cl,cl
+            jz str_int_end
+            sub dl,'0'          ;passar para inteiro
+            
+            mul ch              ;multiplicar o resultado por 10
+            add ax,dx           ;adicionar o numero novo
+            dec cl              ;contar ciclos
+            inc si
+            jmp str_intLp
+            
+        str_int_end:
+        
+        pop si
+        pop cx
+        pop dx
+        ret   
+    endp
     ;incicializa modo grafico
     set_video proc
         
@@ -478,7 +647,7 @@ start:
     ;*****************************************************************
     ; fwrite - write file
     ; descricao: rotina que escreve para um ficheiro
-    ; input - dx - offset para o nome do ficheiro \ bx - file handler \ cx - number of bytes to read  
+    ; input - dx - data to write \ bx - file handler \ cx - number of bytes to read  
     ; output - 
     ; destroi - 
     ;*****************************************************************
