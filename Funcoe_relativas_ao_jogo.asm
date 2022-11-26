@@ -3,7 +3,12 @@
 data segment
     ; add your data here!
     ;----------CONSTANTES----------  
+    ;Definicoes
     
+    PxVerPosOp1 equ 55 ;posicao vertical em pixeis nas definicoes da opcao 1
+    
+    ;Definicoes   
+    rwawr equ 15
     STR_Rel_DIM equ 18 ; Formato "dd/mm/aaaa HH:MM:ss",0
     RelDIM equ 7
      
@@ -18,17 +23,34 @@ data segment
     ;----------CONSTANTES----------
     
     ;DEBUG
-    Username db "Matrim    ",0
+    ;Username db "Matrim    ",0
     ;DEBUG
     
+    handler dw ? 
+    ;fileName db "c:\porcaontas",0
+    ;str_test db "carla ola",0 ;string de teste para escrita em ficheiro
+    str_read db 20 dup(?) ;buffer de leitura
+    
+    
+    
     ;RELOGIO
-    relogio db RelDIM dup(0)
+    relogio db RelDIM dup(0)                
     str_relogio db  STR_Rel_DIM dup(0)
     ;RELOGIO
     
-    ;FICHEIROS
+    ;Definicoes
+    def_str db "Definicoes",0  
+    res_str db "Resolucao:",0 
+    rato_str db "Rato Preso",0
+    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release) 
+    ;Definicoes
+    
+    ;FICHEIROS  
+    str_file_error db "File error num:",0 
+    Username db "Martim    ",0
     ;Username db CHAR_STR_NOME dup(0)    
-    filepath db "C:\GameOfLife\",0,db 42 dup(0)	; path to be created  
+    filepath    db "C:\GameOfLife",0;"C:\GameOfLife",0,
+                db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
     Exemplos db "Exemplos", 0 	; path to be created 
     JogosGuardados db "JogosGuardados",0    
@@ -46,10 +68,18 @@ data segment
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
     gen_num dw 0    
     cell_num dw 0    
-    fator_res db 1              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    fator_res db 4              ;Depois de mexer aqui chamar funcao init_matriz_dim
     ;JOGO
     
-    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)
+  
+    
+    pepe    db 0,0,0,0,0,2,2,0,2,2,0,0,0,0,0,0,0,0,0,0
+            db 0,0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0
+            db 0,0,0,2,2,7,0,7,7,0,2,0,2,0,0,0,0,0,0,0
+            db 2,0,0,2,2,2,2,2,2,2,0,2,0,0,0,0,0,0,0,0
+            db 2,0,2,2,2,2,4,4,4,4,2,0,0,0,0,0,0,0,0,0
+            db 2,0,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0,0
+            db 0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0
 
 ends
 
@@ -66,10 +96,14 @@ start:
     
     ;call saveGame
     
-        
-    call init_matriz_dim
+    ;call saveGame
+    xor cx , cx   
+    mov dx , offset filepath
+    call fcreate
     
-    call init_mouse
+    jmp EXIT    
+    call init_matriz_dim   
+    call im
     
     ;glider PARA TESTE
     mov si , offset matriz_cell
@@ -92,11 +126,15 @@ start:
     ;mov [si] , 1
     ;glider PARA TESTE
     call set_video
-    
+  
+    ;call definicoes
+    ;jmp EXIT
+  
     call print_status 
     mov di , offset matriz_cell
     call fill_matriz
-    
+    call saveGame
+    jmp EXIT
     xor cx , cx  
     mov dx , CHARDIM
     xor bh , bh 
@@ -109,7 +147,8 @@ start:
     call wait_key_press
     call game_loop
     
-    
+    EXIT:;TEMPORARIO  
+    call wait_key_press
     mov ax, 4c00h ; exit to operating system.
     int 21h          
     
@@ -128,6 +167,161 @@ start:
     jmp loop1_main
     if1_main:
     ;LIXO PARA DEBUG;
+    
+    definicoes proc
+        
+        push bp
+        mov sp , bp     ;[bp - 2] -> cor do quadrado da opcao rato preso
+                        
+        sub sp , 2
+        
+        mov [bp - 2] , 15   ;BRANCO
+        
+        push ax
+        push bx 
+        push cx
+        push dx
+        
+        mov AX , 0001
+        INT 33h 
+        
+        mov dx , 14
+        mov cx , PxVerPosOp1
+        mov al , 15     ;BRANCO   
+          
+        mov bx , 10 
+        push bx                ;a funcao recebe words
+        mov bx , 200
+        push bx
+        call draw_rect 
+        
+        mov dh , 2
+        mov dl , 15
+        mov si , offset def_str  
+        call print_pos
+        
+        loop1_def:
+            
+            mov al , 15 ; BRANCO
+            
+            ;Resolucao
+            mov dx , 30
+            mov cx , PxVerPosOp1
+            ;mov al , 15     ;BRANCO
+            push 10
+            push 90
+            call draw_rect  
+            
+            mov dh , 4
+            mov dl , 7
+            mov si , offset Res_str  
+            call print_pos
+            
+            mov dh , 4
+            mov dl , 17 
+            mov cx , 2
+            mov al , lado_cell
+            call print_pos_int
+        
+            
+            ;Rato Preso 
+            mov ax , [bp - 2];cor do retangulo
+            mov dx , 30
+            mov cx , 165
+            push 10
+            push 90
+            call draw_rect  
+            
+            mov dh , 4
+            mov dl , 21
+            mov si , offset rato_str  
+            call print_pos 
+            
+            lp2_def:
+                
+                
+                call gmp
+                call mouse_release
+                or bx , bx
+                
+            jz lp2_def
+            
+            mov ax , 10
+            push ax
+            mov ax , 90
+            push ax
+            mov ax , 30
+            push ax
+            mov ax , PxVerPosOp1
+            push ax
+            call m_hitbox
+            
+            or ax , ax
+            jz if3_def
+            
+                call inc_res
+            
+            if3_def: 
+            
+            mov ax , 10
+            push ax
+            mov ax , 90
+            push ax
+            mov ax , 30
+            push ax
+            mov ax , 165
+            push ax
+            call m_hitbox
+            
+            or ax , ax 
+            jz if1_def       
+                
+                cmp [bp - 2] , 15 
+                jne if2_def       
+                
+                    mov [bp - 2] , 2  
+                    mov rato_preso , 1
+                    jmp loop1_def 
+                if2_def:
+                
+                mov [bp - 2] , 15 
+                mov rato_preso , 0
+                ;jmp loop1_def 
+            
+            if1_def:
+            
+            ;mov [bp - 2] , 15;branco    
+            jmp loop1_def     
+        
+        pop dx
+        pop cx
+        pop bx
+        pop ax
+        add sp , 2 
+        pop bp
+        ret
+    endp
+    
+    ;incrementa a resolucao 
+    inc_res proc
+        
+        
+        cmp fator_res , 5
+        jae if1_ires
+            
+            inc fator_res
+            jmp end_ires
+            
+        if1_ires:
+            
+            mov fator_res , 1
+            
+        end_ires: 
+        
+        call init_matriz_dim
+        ret   
+        
+    endp 
     
     game_loop proc
         
@@ -185,6 +379,12 @@ start:
     endp 
     
     
+    LoadGame proc
+        
+               
+        
+    endp
+    
     ;NOTA ANTES DE CHEGAR AQUI
     ;mov di , offset matriz_cell
     ;call load_matriz
@@ -199,12 +399,14 @@ start:
         push cx
         push dx
         push si
-        push di      
-        
+        push di
+
         mov si , [bp - 2]   
         mov di , si
-        add si , 14             ;para ter a certeza que nao tenho 
-        mov [si], 0             ;outro filepath na str
+        add si , 13             ;para ter a certeza que nao tenho 
+        mov [si], '\'             ;outro filepath na str
+        inc si
+        mov [si] , 0
         
         ;mov di , [bp - 2]
         mov si , offset JogosGuardados  ;filepath  ]e assim o caminho para a pasta
@@ -214,7 +416,7 @@ start:
         mov [di] , '\' 
         mov di , [bp - 2]
         
-        mov si , offset username
+        mov si , offset Username
         call app_str            ;por o nome do user
         
         mov di , offset relogio
@@ -236,26 +438,65 @@ start:
         
         pop si
         mov di , [bp - 2] 
+        call app_str  
+        
+        mov si , offset ext_str
+        mov di , [bp - 2]
         call app_str
          
         ;O CODIGO A BAIXO TIRA OS ESPACOS DA STR
         ;NAO SEI SE }E PRECISO!!! 
+        
         ;mov si , [bp - 2]
         ;mov bl , ' '
         ;call del_char
-        ;Apartidaqui a string esta pronta 
+        
+        ;Apartir daqui a string esta pronta 
         
         ;isto tem de ser feito antes
         ;mov di , offset matriz_cell
         ;call load_matriz
+         
+
+        xor cx , cx   
+        mov dx , offset filepath
+        call fcreate     
         
-        ;agr so falta criar destrutivamente o ficheiro
-        ;e escrever a fator_res(no primeiro byte) e matriz_cell no resto ficheiro
+        mov dx , [bp - 2]  
+        mov al , 2
+        call fopen
+        
+        mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
+        mov cx , 1
+        mov dx , offset fator_res     
+        call fwrite
+        
+        mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
+        mov cx , 2
+        mov dx , offset cell_num
+        call fwrite             
+        
+        mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
+        mov cx , 2
+        mov dx , offset gen_num     
+        call fwrite
+        
+        mov bx , handler
+        mov cx , 15360
+        mov dx , offset matriz_cell
+        call fwrite 
+        
+        mov bx , handler
+        mov dx , [bp - 2]
+        call fclose
             
         pop di
         pop si
         pop cx
-        pop dx
+        pop dx 
+        add sp , 2
+        pop bp
+        ret
         
     endp
     
@@ -545,17 +786,18 @@ start:
         
         xor ax , ax   
         xor bx , bx
-        not ax      ; bx = FFFFh
+        not ax      ; ax = FFFFh
         
         xor cx , cx
         mov cl , fator_res 
+        ;dec cl
 
         shr ax , cl
         shl ax , cl ;fica com 0 nos bits que eu nao quero ler, 
         
         loop1_fmtr:
             
-            call get_mouse_pos
+            call gmp
             
             push bx
             cmp bl , 1
@@ -565,8 +807,9 @@ start:
                 jb endif_fmtr 
                 
                     and cx , ax
-                    and dx , ax        ;Isto torna o a posicao do rato num numero divisivel pelo lado_cell
-                      
+                    
+                    sub dx , CHARDIM 
+                    and dx , ax        ;Isto torna o a posicao do rato num numero divisivel pelo lado_cell  
                     add dx , CHARDIM    ;se dx = 0 assim desenha o quadrado depois dos char
                     
                     push ax
@@ -689,7 +932,7 @@ start:
         
         ret  
     endp 
-                   
+                    
     ;Lado do quadrado de cada ponto da matrix
     ;inicio onde escreve
     ;Dx     = Linha
@@ -898,7 +1141,8 @@ start:
     
     ;Di = inicio str destino
     ;Ax = num  
-    ;cx = numero de char
+    ;cx = numero de char   
+    ;int to str
     int_str proc
         
         push bp     ;[bp - 2] -> numero de char
@@ -1303,7 +1547,37 @@ start:
         pop si
         
         ret
-    endp
+    endp   
+    
+    ;*****************************************************************
+    ; ppi - print pos inteiros
+    ; descricao: rotina que imprime um inteiro numa posicao do ecra
+    ; input - si - offset da string a imprimir/ dh linha/dl coluna
+    ; output - nenhum
+    ; destroi - nada
+    ;*****************************************************************  
+    print_pos_int proc
+        
+        push bx
+        push ax
+        
+            
+        mov ah , 2  ;cursor na posicao 0,0    
+        mov bh , 0  ;pagina
+        INT 10h
+        
+ 
+        pop ax
+        ;add sp , 2  ;macumba
+        
+        mov bl , 0
+        call print_int
+        
+        pop bx
+         
+        
+        ret
+    endp print_pos_int
 
 ;------------STRINGS------------;
       
@@ -1361,7 +1635,7 @@ start:
     ; output - ax=0FFFFH if successfull if failed ax=0 / bx number of buttons
     ; destroi - 
     ;*****************************************************************     
-    init_mouse proc 
+    im proc 
         
         mov ax, 0;initialize mouse
         int 33h
@@ -1375,7 +1649,7 @@ start:
     ; output - dx=ycoord /cx=xcoord / bx 1 left /click/ bx 2 right click/ bx 3 both clicks
     ; destroi - 
     ;*****************************************************************     
-    get_mouse_pos proc 
+    gmp proc 
         
         push ax
         mov ax, 3;initialize mouse
@@ -1412,7 +1686,69 @@ start:
         pop bx 
         fim_msrl:pop ax
         ret
-    endp
+    endp  
+    
+    ;*****************************************************************
+    ; m_hitbox - mouse hitbox
+    ; descricao: rotina que verifica se o rato esta numa dada posicao
+    ; input - 
+    ; push 1 tamanho vertical
+    ;/push 2 tamanho horizontal
+    ;/push 3 posicao do canto sup esquerdo
+    ;/push 4 posicao canto inferior direito 
+    ; output - 
+    ; destroi -  
+    ;***************************************************************** 
+    
+    m_hitbox proc
+     ;call mouse_release   
+           
+            push bp
+            mov bp, sp
+            
+            push bx
+            push dx
+            push cx
+        
+            ;[bp + 4] pos horizontal canto sup esquerdo [bp + 8] tamanho horizontal 
+            ;[bp + 6] pos vertical canto sup esquerdo   [bp + 10] tamanho vertical
+            
+            
+            cmp dx, [bp + 6]       ;esta compreendido entre as verticais
+            jb notRect        
+            
+            mov bx,[bp + 6]
+            add bx,[bp + 10] 
+            cmp dx, bx     
+            ja notRect 
+      
+            cmp cx, [bp + 4]      ;esta compreendido entre as horizontais
+            jb notRect 
+            
+            
+            mov bx,[bp + 4]
+            add bx,[bp + 8]
+            cmp cx, bx
+            ja notRect
+            
+            
+            mov ax, 1;já esta esta dentro?(foi o q ela disse :^))
+            
+            jmp rect
+            
+            notRect:  
+            
+            mov ax, 0
+            
+            rect:
+            
+            pop cx
+            pop dx
+            pop bx
+            pop bp
+            
+            ret 8                          
+    endp m_hitbox
     
     ;--------RATO--------;  
     
@@ -1558,7 +1894,294 @@ start:
         ret
     endp
     
-    ;--------RELOGIO-------;
+    ;--------RELOGIO-------;      
+    
+    pepe_the_frog proc
+        
+        push dx
+        push cx
+        push bx
+        push si 
+               
+        mov dx , 7 
+        mov cx , 0
+        mov bx , 16
+        mov si , offset pepe                                            
+        call print_matriz
+        
+        pop si
+        pop bx
+        pop cx
+        pop dx
+        ret
+    endp
+    
+     
+    ;funcao que desenha um quadrado/retangulo
+    ;dx = Linha do canto superior esquerdo
+    ;cx = Coluna do canto superior esquerdo
+    ;al = cor
+    ;push 1 = tamanho vertical
+    ;push 2 = tamanho horizontal
+    draw_rect proc
+        
+        push bp
+        mov bp,sp       ;[bp + 6] -> tamanho Vertical
+                        ;[bp + 4] -> tamanho horizontal
+        
+        
+        
+        mov bx,[bp + 6]       
+        call drawVline 
+        
+        mov bx,[bp + 4]
+        call drawHline
+        
+        sub dx , [bp + 6]
+        mov bx , [bp + 4]
+        sub cx , bx
+        call drawHline
+        
+        mov bx , [bp + 6]
+        call drawVline
+        
+        
+        ;pop cx 
+        pop bp
+        ret 4
+        
+    endp
+                  
+    
+    ;dx = Linha
+    ;cx = inicio (Coluna)   ; destroi
+    ;al = cor
+    ;bx = tamanho
+    ;draw vertical line
+    drawHline proc    
+        ;push bp     ;[bp + 4] -> tamanho 
+        ;mov bp,sp   
+        
+        push ax
+
+        
+        add bx , cx ; aponta para o ultimo pixel da linha
+        mov ah , 0ch
+        
+        loop1_Vline:
+            
+            int 10h  
+            inc cx
+            cmp cx,bx
+        jb loop1_Vline 
+        
+
+        pop ax
+        ret   
+    endp
+    
+             
+    ;dx = Inicio (Linha)
+    ;cx = Coluna   ; destroi
+    ;al = cor
+    ;bx = tamanho
+    ;draw vertical line
+    drawVline proc
+        
+        push ax
+        
+        add bx , dx ; aponta para o ultimo pixel da linha
+        mov ah , 0ch
+        
+        loop1_Hline:
+            
+            int 10h  
+            inc dx
+            cmp dx,bx
+        jb loop1_Hline 
+        
+   
+        pop ax
+        ret
+        
+        ret    
+    endp 
+   
+   ;*****************************************************************
+    ; pp - print pos
+    ; descricao: rotina que imprime uma string numa posicao do ecra
+    ; input - si - offset da string a imprimir/ dh linha/dl coluna
+    ; output - nenhum
+    ; destroi - nada
+    ;*****************************************************************  
+    print_pos proc
+        
+        push ax
+        push bx
+        
+            
+        mov ah , 2  ;cursor na posicao 0,0    
+        mov bh , 0  ;pagina
+        INT 10h
+       
+        mov bl , 0
+        call printf
+        
+         
+        pop bx
+        pop ax
+        ret
+    endp print_pos   
+    
+        ;*****************************************************************
+    ; fcreate - file create
+    ; descricao: rotina que cria um ficheiro
+    ; input - dx - offset para o nome do ficheiro / cx- tipo de ficheiro 
+    ; output - 
+    ; destroi - 
+    ;*****************************************************************
+    
+    proc fcreate
+               
+        mov ah, 3ch ;create file      
+        int 21h 
+        
+        jnc fcreate_success ;salta se criar o ficheiro com sucesso
+        
+            call print_file_error
+        
+        fcreate_success:  
+        
+        mov handler, ax ; mover o handler do ficheiro para uma varaiavel global
+        
+        mov bx, ax ; colocar o handler em bx para fechar o ficheiro de seguida
+        
+        ;close file
+        mov ah, 3eh ;close file
+        int 21h
+        
+        jnc fcreateClose_success ;salta se fechar o ficheiro com sucesso 
+        
+            call print_file_error
+        
+        fcreateClose_success:
+        
+        ret    
+    endp fcreate
+    ;*****************************************************************
+    ; fopen - open file
+    ; descricao: rotina que abre um ficheiro
+    ; input - dx - offset para o nome do ficheiro \ al - tipo de leitura   
+    ; output - 
+    ; destroi - 
+    ;*****************************************************************
+    
+    proc fopen
+               
+        mov ah, 3dh ; open file file      
+        int 21h 
+        
+        jnc fopen_success ;salta se criar o ficheiro com sucesso
+        
+            call print_file_error
+        
+        fopen_success:  
+        
+        ret    
+    endp fclose 
+    ;*****************************************************************
+    ; fclose - close file
+    ; descricao: rotina que fecha um ficheiro
+    ; input - dx - offset para o nome do ficheiro \ bx - file handler   
+    ; output - 
+    ; destroi - 
+    ;*****************************************************************
+    proc fclose
+        ;close file
+        mov ah, 3eh ;close file
+        int 21h
+        
+        jnc fclose_success ;salta se fechar o ficheiro com sucesso 
+        
+            call print_file_error
+        
+        fclose_success:
+        
+        ret 
+    endp fclose
+    ;*****************************************************************
+    ; fwrite - write file
+    ; descricao: rotina que escreve para um ficheiro
+    ; input - dx - offset para o nome do ficheiro \ bx - file handler \ cx - number of bytes to read  
+    ; output - 
+    ; destroi - 
+    ;*****************************************************************
+    proc fwrite
+        ;close file
+        mov ah, 40h ;close file
+        int 21h
+        
+        jnc fwrite_success ;salta se fechar o ficheiro com sucesso 
+        
+            call print_file_error
+        
+        fwrite_success:
+        
+        ret 
+    endp fwrite
+    ;*****************************************************************
+    ; fread - read file
+    ; descricao: rotina que le um ficheiro para um buffer
+    ; input - dx - offset para o nome do ficheiro \ bx - file handler \ cx - number of bytes to read  
+    ; output - 
+    ; destroi - 
+    ;*****************************************************************
+    proc fread
+        ;close file
+        mov ah, 3fh ;read file
+        int 21h
+        
+        jnc fread_success ;salta se fechar o ficheiro com sucesso 
+        
+            call print_file_error
+        
+        fread_success:
+        
+        ret 
+    endp fread  
+    
+    ;escreve "File error num:XXXXX",
+    ;sendo XXXXX -> o numero do erro em decimal  
+    ;recebe em ax o numero do erro
+    print_file_error proc 
+        
+        push cx 
+        push dx
+        push bx
+        push si
+        push ax 
+        
+        mov AH ,2
+        xor dx ,dx 
+        xor bh , bh;cursor na posicao 0,0
+        INT 10h     
+        
+        mov si , offset str_file_error
+        mov bh , 0
+        call printf
+        
+        pop ax 
+        mov cx , 5
+        call print_int;escreve o numero do erro em decimal
+        
+        pop si
+        pop bx
+        pop dx
+        pop cx
+        ret
+    endp
+
+    
 ends
 
 end start ; set entry point and stop the assembler.
