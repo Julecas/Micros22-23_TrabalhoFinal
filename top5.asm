@@ -8,15 +8,25 @@ data segment
     str_error_open db "falha ao abrir ficheiro",0 
     str_error_write db "falha ao escrever no ficheiro",0
     str_error_read db "falha ao ler do ficheiro",0
-    fileName db "c:\TOP5.txt",0 
+    fileNameTop5 db "c:\gameOfLife\TOP5.txt",0 
     str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0
-    str_read db 20 dup(?) ;buffer de leitura
+    str_read db 20 dup(?) ;buffer de leitura 
+    str_log1 db "20221103:145123:canudo    :102:0256",0
+    str_log2 db "20221005:155223:bazoro    :162:0456",0
+    str_log3 db "20220907:105125:munaldo   :121:0756",0
+    str_log4 db "20220808:115113:crabrezo  :245:0356",0
+    str_log5 db "20220709:125160:fto       :863:0236",0 
+    
+    
+    
+    lowerCells dw dup(?) ;quem tem menos cells no top 5
    
     handler dw ? 
     
     VlineFile equ 6  
+    
 
-
+   
     
 ends
 
@@ -33,9 +43,7 @@ start:
 
     ;MAIN  
     
-    call set_video
-    
-    call top5        
+    call readtop5        
     
     
     mov ax, 4c00h ; exit to operating system.
@@ -45,6 +53,53 @@ start:
     
     
     ;ROTINAS 
+    
+    ;*****************************************************************
+    ; writetop5 
+    ; descricao: rotina que escreve no top 5 com base nos logs
+    ; input -  
+    ; output - 
+    ; destroi - ax 
+    ;***************************************************************** 
+    proc writetop5 
+     
+    
+     
+     
+        
+    ;input -  bx - file handler 
+    ;cx:dx offset from origin of new, file position  (cx-linha no ficheiro\ dx- coluna no fichéiro)
+    ;al 0,1,2 start of file ,current file position ,end of file (respetivamente)   
+    
+    mov dx, offset str_read     
+    mov bx, handle  
+    mov cx,0 ; linha 0 
+    mov dx,4 ; col 4 
+    mov al,0 ;start of file
+    writeTop5Lp:
+    
+    call seek ;procura o numero de cells no ficheiro top5.txt 
+    
+    push cx
+    
+    mov cx, 4 ;bytes to read
+    
+    call read
+    
+    pop cx  
+    
+    
+    ;vou ter de converter mum int
+    ;cmp dx,     
+        
+    jmp writeTop5Lp    
+        
+        ret
+    endp writetop5    
+    
+    
+    
+    ;incicializa modo grafico
     set_video proc
         
         push ax
@@ -56,13 +111,16 @@ start:
         ret
     endp set_video  
     ;*****************************************************************
-    ; top5 
+    ; readtop5 
     ; descricao: rotina que apresenta o top 5 jogadores
     ; input -  
     ; output - 
     ; destroi - ax 
     ;***************************************************************** 
-    proc top5
+    
+    
+    
+    proc readtop5
         
         push bp 
         mov bp, sp
@@ -82,7 +140,7 @@ start:
         mov si, offset str_rodapeTop5
         call print_pos ;print str rodape do top 5   
         
-        mov dx, offset fileName 
+        mov dx, offset fileNameTop5 
               
         mov al, 0      ;0 - read \ 1 - write \ 2 read/write  
         call fopen
@@ -108,7 +166,7 @@ start:
             
             mov dl, 1
             mov dh, [bp - 2]
-            mov si, offset str_read ; buffer for data
+            mov si, offset str_read ; buffer for data        ;GEN
             call print_pos ;print geracao 1a linha 
             
             ;parametros
@@ -122,7 +180,7 @@ start:
             mov [di], 0
             
             mov dl, 6
-            mov dh, [bp - 2]
+            mov dh, [bp - 2]                              ;CELLS
             mov si, offset str_read ; buffer for data
             call print_pos ;rint cellnumber 1a linha
             
@@ -138,7 +196,7 @@ start:
             
             mov dl, 12
             mov dh, [bp - 2]
-            mov si, offset str_read ; buffer for data
+            mov si, offset str_read ; buffer for data       ;NOME
             call print_pos ;print player 1a linha 
             
             ;parametros
@@ -153,7 +211,7 @@ start:
             
             mov dl, 23
             mov dh, [bp - 2]
-            mov si, offset str_read ; buffer for data
+            mov si, offset str_read ; buffer for data      ;DATA
             call print_pos ;print data 1a linha  
             
             ;parametros
@@ -168,7 +226,7 @@ start:
             
             mov dl, 32
             mov dh, [bp - 2]
-            mov si, offset str_read ; buffer for data 
+            mov si, offset str_read ; buffer for data     ;HORA
             
             call print_pos ;print hora 1a linha 
             
@@ -177,11 +235,11 @@ start:
             add [bp - 2], 2; new line
             
             inc cx
-            cmp cx, 4
+            cmp cx, 5
             jne readLoop
         
         ;parametros
-        mov dx, offset fileName 
+        mov dx, offset fileNameTop5
         mov bx, handler
         call fclose
         
@@ -193,7 +251,7 @@ start:
         pop bp
         
         ret
-    endp top5
+    endp readtop5
     ;*****************************************************************
     ; co - caracter output
     ; descricao: rotina que faz o output de um caracter para o ecra
@@ -474,13 +532,15 @@ start:
         ret 
     endp fread
     ;*****************************************************************
-    ; freadLine - read file line
+    ; seek - read file line
     ; descricao: rotina que le uma linha de ficheiro para um buffer
-    ; input -  bx - file handler \ cx:dx offset from origin of new, file position\ al 0,1,2 star of file,current file position,end of file (respetivamente)   
+    ; input -  bx - file handler 
+    ; cx:dx offset from origin of new, file position  (cx-linha no ficheiro\ dx- coluna no fichéiro)
+    ; al 0,1,2 start of file ,current file position ,end of file (respetivamente)   
     ; output -  
     ; destroi - 
     ;*****************************************************************
-    proc freadLine
+    proc seek
         ;close file
         mov ah, 42h ;read file (seek)
         int 21h
@@ -497,7 +557,7 @@ start:
         freadLine_success:
         
         ret 
-    endp freadLine
+    endp seek
 ends
 
 end start ; set entry point and stop the assembler.

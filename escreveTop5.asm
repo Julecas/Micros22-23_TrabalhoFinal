@@ -16,10 +16,12 @@ data segment
     filepathcmp db "gameOfLife", 0 	;name of path to be compared  
     filepathExemplos db "C:\gameOfLife\Exemplos", 0 	; path to be created 
     filepathExemploscmp db "gameOfLife\Exemplos", 0 
-    fileNameTop5 db "c:\gameOfLife\TOP5.txt",0  ;por agora 
+    fileNameTop5 db "c:\gameOfLife\TOP5.txt",0  
     filenameLogs db "c:\gameOfLife\Logs.txt",0 
     log_exemplo db "20221103:145123:NOME DO JOGADOR:122:0156$",0 
-    str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0
+    str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0 
+    
+    VlineFile equ 6  
   
     
 ends

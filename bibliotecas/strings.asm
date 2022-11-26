@@ -43,9 +43,7 @@ start:
     mov ax, 4c00h ; exit to operating system.
     int 21h
      
-
-   
-       ;------------STRINGS------------;
+ ;------------STRINGS------------;
     
     ;Ax = num
     ;cx = numero de char a escrever
@@ -68,41 +66,28 @@ start:
             push dx
         
         dec cx
-        jz if1_prtint
-        or ax,ax
         jz endlp1_prtint
-        jmp loop1_prtint
+        or ax,ax
+        jnz loop1_prtint
         
         endlp1_prtint:
-            
-            push 48     ;'0'
-            dec cx
-        jnz endlp1_prtint
         
-        if1_prtint:
-        mov cx , [bp - 2]   ;numero de char para dar print 
+        add cx , [bp - 2]   ;numero de char para dar print 
         
         loop2_prtint:
             
             pop ax
-            ;xchg al , ah
-            call co 
-            dec cx 
-            ;jz endlp2_prtint
-            ;mov al,ah
-            ;call co
-            ;dec cx
+            call co
+            dec cx
         jnz loop2_prtint        
-        endlp2_prtint:
         
         pop bx
         pop dx
         pop cx
         pop bp
         ret               
-    endp
+    endp 
 
-    
     ;Si = inicio do numero na str
     ;Cl = num de char =< 5
     ;Ax = resultado
@@ -111,10 +96,8 @@ start:
         push dx ;inicializar as variaveis
         push cx
         push si
-        
-        xor ax , ax  
-        xor dh , dh
-        
+        mov ax,0
+        mov dh,0
         mov ch,10
                  
         str_intLp:
@@ -139,70 +122,12 @@ start:
         pop dx
         ret   
     endp
-    
-    ;Di = inicio str destino
-    ;Ax = num  
-    ;cx = numero de char
-    int_str proc
-        
-        push bp     ;[bp - 2] -> numero de char
-        mov bp,sp
-        
-        push cx
-        push dx 
-        push bx
-        push ax
-        
-       ; mov cx , bx 
-        
-        mov bx , 10 
-        
-        loop1_intstr:  
-        
-            xor dx , dx    
-            div bx
-            add dl , '0'
-            push dx
-        
-        dec cx
-        jz if1_intstr
-        or ax,ax
-        jz endlp1_intstr
-        jmp loop1_intstr
-        
-        endlp1_intstr:
-            
-            push 48     ;'0'
-            dec cx
-        jnz endlp1_intstr
-        
-        if1_intstr:
-        mov cx , [bp - 2]   ;numero de char para dar print 
-        
-        loop2_intstr:
-            
-            pop ax
-            xor ah , ah;provavelmente nao ]e preciso
-            mov byte ptr[di] , al
-            inc di 
-            dec cx 
-            
-        jnz loop2_intstr        
-        endlp2_intstrt:
-        
-        pop bx
-        pop dx
-        pop cx  
-        pop ax
-        pop bp
-        ret               
-    endp
          
-    ;Di = inicio str destino
+     ;Di = inicio str destino
     ;Ax = num
     ;bh = 0,para terminar str com 0  
     ;bl = numero de char
-    int_strVlh proc
+    int_str proc
                  
         push cx
         push dx
@@ -251,6 +176,27 @@ start:
         pop cx
         ret
         
+    endp
+ 
+    ;Di = inicio str terminada em 0
+    ;Ax = valor     
+    cnt_str proc
+            
+        push cx
+        push di
+            
+        mov al,0  ;necessario ?
+        mov cx,-1 ;para contar ao contrario
+            
+        cld 
+        repne scasb                           
+                      
+        mov ax,-1          
+        sub ax, cx  ; ax = -(Cx + 1) 
+        
+        pop di    
+        pop Cx
+        ret
     endp
  
     ;Di = inicio str terminada em 0
@@ -550,7 +496,7 @@ start:
     endp
 
 ;------------STRINGS------------;
-
+        
 ends
 
 end start ; set entry point and stop the assembler.

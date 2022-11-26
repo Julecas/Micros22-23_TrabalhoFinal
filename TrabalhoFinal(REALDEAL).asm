@@ -209,24 +209,28 @@ start:
             mov si , offset matriz_cell  
             call print_matriz 
             
-             ;call mouse_release
+            ;call mouse_release
             call gmp 
+                  ;quarto push                                  ;segundo push
+            ;[bp + 4] coluna canto sup esquerdo [bp + 8] tamanho horizontal 
+            ;[bp + 6] linha canto sup esquerdo   [bp + 10] tamanho vertical
+                    ;terceiro push                                ;primeiro push
             
-            cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
-            jne loop_select_op
+            mov ax, 8 
+            push ax
+            mov ax, 35
+            push ax
+            mov ax, 0
+            push ax
+            mov ax, 270
+            push ax 
+            call m_hitbox
             
-            cmp dx, 58                 ;esta compreendido entre as verticais
-            jb notRectJogar         
             
-            cmp dx, 58+VlenghtRect     
-            ja notRectJogar 
-      
-            cmp cx, HposRectLeft       ;esta compreendido entre as horizontais
-            jb notRectJogar 
-            
-            cmp cx, HposRectLeft+HlenghtRect
-            ja notRectJogar  
-    
+            or ax,ax
+            ;;SAIR
+            jnz sair_gl
+             
             
             call prox_gen
             
@@ -236,6 +240,8 @@ start:
             
         or ax , ax     
         jnz loop1_gl  
+        
+        sair_gl:
         
         pop cx
         ret
@@ -256,6 +262,10 @@ start:
         push bx
         push si
         push di
+        
+        
+        ;mov ax, 2  ;hide mouse cursor
+        ;int 33
         
         mov si , di 
         
@@ -306,6 +316,10 @@ start:
         xor cx , cx
         mov bx , ax
         call print_matriz    
+        
+        
+        ;mov ax, 1  ;show mouse cursor
+        ;int 33
         
         mov ax , [bp - 2]
         pop di
@@ -1199,6 +1213,7 @@ start:
     ;***************************************************************** 
     creditos proc
         
+         
         call c_time
         
         
@@ -1716,10 +1731,14 @@ start:
                     ;terceiro push                                ;primeiro push
             ;HITBOX RECT JOGO
             
-            push VlenghtRect
-            push HlenghtRect
-            push 58
-            push HposRectLeft
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 58
+            push ax
+            mov ax, HposRectLeft
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1736,11 +1755,14 @@ start:
             ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
             ;HITBOX RECT EXEMPLOS
-            
-            push VlenghtRect
-            push HlenghtRect
-            push 98
-            push HposRectLeft
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 98
+            push ax
+            mov ax, HposRectLeft
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1758,11 +1780,14 @@ start:
             ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
             ;HITBOX RECT RETOMAR
-            
-            push VlenghtRect
-            push HlenghtRect
-            push 138
-            push HposRectLeft
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 138
+            push ax
+            mov ax, HposRectLeft
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1780,11 +1805,14 @@ start:
             ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
             ;HITBOX RECT TOP5
-            
-            push VlenghtRect
-            push HlenghtRect
-            push 58
-            push HposRectRight
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 58
+            push ax
+            mov ax, HposRectRight
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1801,11 +1829,14 @@ start:
             ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
             ;HITBOX RECT CREDITOS
-            
-            push VlenghtRect
-            push HlenghtRect
-            push 98
-            push HposRectRight
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 98
+            push ax
+            mov ax, HposRectRight
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1823,11 +1854,14 @@ start:
             ;[bp + 6] tamanho horizontal [bp + 10] pos horizontal canto sup esquerdo
             
             ;HITBOX RECT SAIR
-            
-            push VlenghtRect
-            push HlenghtRect
-            push 138
-            push HposRectRight
+            mov ax, VlenghtRect 
+            push ax
+            mov ax, HlenghtRect
+            push ax
+            mov ax, 138
+            push ax
+            mov ax, HposRectRight
+            push ax
             call m_hitbox
             
             cmp ax, 0
@@ -1844,7 +1878,11 @@ start:
            
             jmp loop_select_op 
         
-        end_loop_select_op:           
+        end_loop_select_op:  
+        
+        ;***
+        ;jmp loop_select_op 
+        ;DEBUGG         
            
         pop si
         pop ax
@@ -1858,7 +1896,11 @@ start:
     ;*****************************************************************
     ; m_hitbox - mouse hitbox
     ; descricao: rotina que verifica se o rato esta numa dada posicao
-    ; input - push 1 tamanho vertical/push 2 tamanho horizontal/push 3 posicao do canto sup esquerdo/push 4 posicao canto inferior direito 
+    ; inputs 
+    ; push 1 tamanho vertical
+    ; push 2 tamanho horizontal
+    ; push 3 linha canto sup esquerdo
+    ; push 4 coluna canto sup esquerdo 
     ; output - 
     ; destroi -  
     ;***************************************************************** 
@@ -1874,8 +1916,8 @@ start:
             push dx
             push cx
         
-            ;[bp + 4] pos horizontal canto sup esquerdo [bp + 8] tamanho horizontal 
-            ;[bp + 6] pos vertical canto sup esquerdo   [bp + 10] tamanho vertical
+            ;[bp + 4] coluna canto sup esquerdo  [bp + 8] tamanho horizontal 
+            ;[bp + 6] linha canto sup esquerdo  [bp + 10] tamanho vertical
             
             
             cmp dx, [bp + 6]       ;esta compreendido entre as verticais
