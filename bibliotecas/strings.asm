@@ -43,7 +43,7 @@ start:
     mov ax, 4c00h ; exit to operating system.
     int 21h
      
- ;------------STRINGS------------;
+;------------STRINGS------------;
     
     ;Ax = num
     ;cx = numero de char a escrever
@@ -66,28 +66,41 @@ start:
             push dx
         
         dec cx
-        jz endlp1_prtint
+        jz if1_prtint
         or ax,ax
-        jnz loop1_prtint
+        jz endlp1_prtint
+        jmp loop1_prtint
         
         endlp1_prtint:
+            
+            push 48     ;'0'
+            dec cx
+        jnz endlp1_prtint
         
-        add cx , [bp - 2]   ;numero de char para dar print 
+        if1_prtint:
+        mov cx , [bp - 2]   ;numero de char para dar print 
         
         loop2_prtint:
             
             pop ax
-            call co
-            dec cx
+            ;xchg al , ah
+            call co 
+            dec cx 
+            ;jz endlp2_prtint
+            ;mov al,ah
+            ;call co
+            ;dec cx
         jnz loop2_prtint        
+        endlp2_prtint:
         
         pop bx
         pop dx
         pop cx
         pop bp
         ret               
-    endp 
+    endp
 
+    
     ;Si = inicio do numero na str
     ;Cl = num de char =< 5
     ;Ax = resultado
@@ -96,8 +109,10 @@ start:
         push dx ;inicializar as variaveis
         push cx
         push si
-        mov ax,0
-        mov dh,0
+        
+        xor ax , ax  
+        xor dh , dh
+        
         mov ch,10
                  
         str_intLp:
@@ -122,83 +137,66 @@ start:
         pop dx
         ret   
     endp
-         
-     ;Di = inicio str destino
-    ;Ax = num
-    ;bh = 0,para terminar str com 0  
-    ;bl = numero de char
+    
+    ;Di = inicio str destino
+    ;Ax = num  
+    ;cx = numero de char   
+    ;int to str
     int_str proc
-                 
+        
+        push bp     ;[bp - 2] -> numero de char
+        mov bp,sp
+        
         push cx
-        push dx
-        push ax
+        push dx 
         push bx
+        push ax
         
-        ;xor bx,bx 
-        mov cx,10
+       ; mov cx , bx 
         
-        ;cnt_intsrt:
-        ;    
-        ;    inc bl
-        ;    xor dx,dx        ;dx tem de ser 0
-        ;    div cx
-        ;    or ax,ax
-        ;    
-        ;jnz cnt_intsrt 
+        mov bx , 10 
         
-        ;dec di 
-        xor bh , bh;bx = bl 
-        dec bx
-        add di , bx
+        loop1_intstr:  
+        
+            xor dx , dx    
+            div bx
+            add dl , '0'
+            push dx
+        
+        dec cx
+        jz if1_intstr
+        or ax,ax
+        jz endlp1_intstr
+        jmp loop1_intstr
+        
+        endlp1_intstr:
+            
+            push 48     ;'0'
+            dec cx
+        jnz endlp1_intstr
+        
+        if1_intstr:
+        mov cx , [bp - 2]   ;numero de char para dar print 
+        
+        loop2_intstr:
+            
+            pop ax
+            xor ah , ah;provavelmente nao ]e preciso
+            mov byte ptr[di] , al
+            inc di 
+            dec cx 
+            
+        jnz loop2_intstr        
+        endlp2_intstrt:
+        
         pop bx
-        
-        or bl,bl
-        jnz end_intstr
-            inc di
-            mov [di],0;terminar a string    
-            dec di
-        end_intstr:
-            
-        pop ax
-        lp1_intstr:
-            
-            xor dx,dx        ;dx tem de ser 0
-            div cx
-            add dl,'0'      ;dl tem o char menos significativo
-            mov [di], dl    ;adiciona a string      
-                        
-            dec di          ;prox posicao
-            or ax,ax
-            jnz lp1_intstr 
-        
-        ;pop bx
         pop dx
-        pop cx
-        ret
-        
+        pop cx  
+        pop ax
+        pop bp
+        ret               
     endp
- 
-    ;Di = inicio str terminada em 0
-    ;Ax = valor     
-    cnt_str proc
-            
-        push cx
-        push di
-            
-        mov al,0  ;necessario ?
-        mov cx,-1 ;para contar ao contrario
-            
-        cld 
-        repne scasb                           
-                      
-        mov ax,-1          
-        sub ax, cx  ; ax = -(Cx + 1) 
-        
-        pop di    
-        pop Cx
-        ret
-    endp
- 
+         
     ;Di = inicio str terminada em 0
     ;Ax = valor     
     cnt_str proc
@@ -493,10 +491,39 @@ start:
         pop si
         
         ret
-    endp
-
-;------------STRINGS------------;
+    endp   
+    
+    ;*****************************************************************
+    ; ppi - print pos inteiros
+    ; descricao: rotina que imprime um inteiro numa posicao do ecra
+    ; input - si - offset da string a imprimir/ dh linha/dl coluna
+    ; output - nenhum
+    ; destroi - nada
+    ;*****************************************************************  
+    print_pos_int proc
         
+        push bx
+        push ax
+        
+            
+        mov ah , 2  ;cursor na posicao 0,0    
+        mov bh , 0  ;pagina
+        INT 10h
+        
+ 
+        pop ax
+        ;add sp , 2  ;macumba
+        
+        mov bl , 0
+        call print_int
+        
+        pop bx
+         
+        
+        ret
+    endp print_pos_int
+
+;------------STRINGS------------;       
 ends
 
 end start ; set entry point and stop the assembler.
