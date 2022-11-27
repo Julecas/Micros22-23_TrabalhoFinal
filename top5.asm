@@ -889,61 +889,7 @@ start:
         ret               
     endp
          
-    ;Di = inicio str destino
-    ;Ax = num
-    ;bh = 0,para terminar str com 0  
-    ;bl = numero de char
-    int_strVlh proc
-                 
-        push cx
-        push dx
-        push ax
-        push bx
-        
-        ;xor bx,bx 
-        mov cx,10
-        
-        ;cnt_intsrt:
-        ;    
-        ;    inc bl
-        ;    xor dx,dx        ;dx tem de ser 0
-        ;    div cx
-        ;    or ax,ax
-        ;    
-        ;jnz cnt_intsrt 
-        
-        ;dec di 
-        xor bh , bh;bx = bl 
-        dec bx
-        add di , bx
-        pop bx
-        
-        or bl,bl
-        jnz end_intstr
-            inc di
-            mov [di],0;terminar a string    
-            dec di
-        end_intstr:
-            
-        pop ax
-        lp1_intstr:
-            
-            xor dx,dx        ;dx tem de ser 0
-            div cx
-            add dl,'0'      ;dl tem o char menos significativo
-            mov [di], dl    ;adiciona a string      
-                        
-            dec di          ;prox posicao
-            or ax,ax
-            jnz lp1_intstr 
-        
-        ;pop bx
-        pop dx
-        pop cx
-        ret
-        
-    endp
- 
+     
     ;Di = inicio str terminada em 0
     ;Ax = valor     
     cnt_str proc
