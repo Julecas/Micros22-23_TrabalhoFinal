@@ -31,8 +31,6 @@ data segment
     ;str_test db "carla ola",0 ;string de teste para escrita em ficheiro
     str_read db 20 dup(?) ;buffer de leitura
     
-    
-    
     ;RELOGIO
     relogio db RelDIM dup(0)                
     str_relogio db  STR_Rel_DIM dup(0)
@@ -42,19 +40,23 @@ data segment
     def_str db "Definicoes",0  
     res_str db "Resolucao:",0 
     rato_str db "Rato Preso",0
-    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release) 
+    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release) 
     ;Definicoes
     
     ;FICHEIROS  
+    pedir_nome db "Nome do ficheiro:",0
+    input_str db "F235310.GAM",0;28 dup(0)  
     str_file_error db "File error num:",0 
-    Username db "Martim    ",0
+    Username db 11 dup(0)
     ;Username db CHAR_STR_NOME dup(0)    
     filepath    db "C:\GameOfLife",0;"C:\GameOfLife",0,
                 db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
     Exemplos db "Exemplos", 0 	; path to be created 
-    JogosGuardados db "JogosGuardados",0    
-    ext_str db ".GAM",0         ;str com o nome da extensao do jogo
+    Jogos db "Jogos",0    
+    ext_str db ".GAM",0         ;str com o nome da extensao do jogo  
+    str_top db , 37 dup(0)      ;str com o formato de uma entrada no top5
+                                ;EX.: 0930336canibal	 22/11/03 03:35:59
     ;FICHEIROS
     
     ;JOGO
@@ -66,9 +68,9 @@ data segment
     matrizY dw 0
     matrizX dw 0  
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
-    gen_num dw 0    
-    cell_num dw 0    
-    fator_res db 4              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    gen_num dw 0 ;debug   
+    cell_num dw 0   
+    fator_res db 1              ;Depois de mexer aqui chamar funcao init_matriz_dim
     ;JOGO
     
   
@@ -94,58 +96,17 @@ start:
     mov ds, ax
     mov es, ax
     
-    ;call saveGame
+    call set_video
     
-    ;call saveGame
-    xor cx , cx   
-    mov dx , offset filepath
-    call fcreate
-    
+    mov di , offset str_top
+    call loadgame
     jmp EXIT    
     call init_matriz_dim   
-    call im
-    
-    ;glider PARA TESTE
-    mov si , offset matriz_cell
-    add si , 4 
-    
-    ;add si , matrizX
-    ;add si , matrizX
-    ;add si , matrizX
-    ;add si , matrizX
-    ;mov [si] , 1    
-    ;inc si
-    ;add si , matrizX
-    ;mov [si] , 1
-    ;inc si
-    ;mov [si] , 1
-    ;add si , matrizX
-    ;sub si , 3
-    ;mov [si] , 1  
-    ;inc si 
-    ;mov [si] , 1
-    ;glider PARA TESTE
+    call im        
     call set_video
-  
-    ;call definicoes
-    ;jmp EXIT
-  
-    call print_status 
-    mov di , offset matriz_cell
-    call fill_matriz
-    call saveGame
-    jmp EXIT
-    xor cx , cx  
-    mov dx , CHARDIM
-    xor bh , bh 
-    mov Bl , lado_cell
-    mov si , offset matriz_cell
-    ;call wait_key_press
-    ;call print_matriz
-    
-    ;call set_video
+   
     call wait_key_press
-    call game_loop
+    call op_retomar
     
     EXIT:;TEMPORARIO  
     call wait_key_press
@@ -166,7 +127,48 @@ start:
         mov [si],1  
     jmp loop1_main
     if1_main:
-    ;LIXO PARA DEBUG;
+    ;LIXO PARA DEBUG; 
+    
+    ;di = offset onde escrever a str
+    ;o resto dos valores esta funcao usas as variaveis globais
+    top5_str proc
+        
+        push ax
+        push si
+        push cx
+        
+        mov [di] , 0 ;terminar a string logo ao inicio
+        mov ax , cell_num
+        mov cx , 4
+        call int_str
+        
+        mov ax , gen_num
+        mov cx , 4 
+        call int_str
+        
+        mov [di] , 0
+        dec di
+        mov si , offset Username  
+        call app_str
+        
+        mov di , offset relogio
+        mov si , di
+        call ler_relogio
+        
+        mov di , offset str_relogio 
+        push di 
+        call make_relogio_str
+        
+        pop si
+        mov di , offset str_top
+        call app_str
+        
+        pop cx
+        pop si
+        pop ax
+        ret
+        
+    endp
     
     definicoes proc
         
@@ -182,7 +184,7 @@ start:
         push cx
         push dx
         
-        mov AX , 0001
+        mov AX , 1
         INT 33h 
         
         mov dx , 14
@@ -202,14 +204,17 @@ start:
         
         loop1_def:
             
-            mov al , 15 ; BRANCO
+            
             
             ;Resolucao
             mov dx , 30
             mov cx , PxVerPosOp1
-            ;mov al , 15     ;BRANCO
-            push 10
-            push 90
+            ;mov al , 15     ;BRANCO 
+            mov ax , 10
+            push ax
+            mov ax , 100
+            push ax
+            mov al , 15 ; BRANCO
             call draw_rect  
             
             mov dh , 4
@@ -225,11 +230,14 @@ start:
         
             
             ;Rato Preso 
-            mov ax , [bp - 2];cor do retangulo
+            
             mov dx , 30
-            mov cx , 165
-            push 10
-            push 90
+            mov cx , 165  
+            mov ax , 10
+            push ax
+            mov ax , 90
+            push ax
+            mov ax , [bp - 2];cor do retangulo
             call draw_rect  
             
             mov dh , 4
@@ -246,9 +254,10 @@ start:
                 
             jz lp2_def
             
+            ;res
             mov ax , 10
             push ax
-            mov ax , 90
+            mov ax , 100
             push ax
             mov ax , 30
             push ax
@@ -378,11 +387,108 @@ start:
         ret
     endp 
     
+    op_retomar proc
+        
+        ;criar quadrado preto no ecra
+        ;outline
+        ;pedir ao user o nome do ficheiro 
+        ;call loadGame0 
+        
+        mov ax , 2;cor do retangulo
+        mov dx , 49
+        mov cx , 42
+        mov bh , 50
+        mov bl , 180
+        call print_retangulo
+        
+        mov si , offset pedir_nome 
+        mov dh , 7
+        mov dl , 8
+        mov bx , 0
+        call print_pos     
+        
+        mov bx , 50
+        push bx
+        mov bx , 180
+        push bx
+        call draw_rect
+        
+        
+        mov dh , 9
+        mov dl , 8
+        xor  bx ,bx 
+        ;scanf  
+        
+        ret
+    endp
     
     LoadGame proc
         
-               
+        push si
+        push di 
+        push ax
         
+        mov si , offset filepath   
+        mov di , si
+        add si , 13             ;para ter a certeza que nao tenho 
+        mov [si], '\'             ;outro filepath na str
+        inc si
+        mov [si] , 0 
+        
+        mov si , offset Jogos           ;filepath  ]e assim o caminho para a pasta
+        call app_str                    ;com os jogos
+        
+        dec di                          ;di esta a apontar para a posicao a seguir ao 0
+        mov [di] , '\'  
+        inc di
+        mov [di] , 0
+        mov di , offset filepath 
+        
+        mov si , offset input_str
+        call app_str            ;por o nome do ficheiro  
+        
+        
+        mov dx , offset filepath 
+        mov al , 2
+        mov ah, 3dh ; open file      
+        int 21h 
+        
+        jnc if1_ldgm                  
+        
+            ;PRINT FICHEIRO NAO EXISTE
+            jmp endf_ldgm
+        if1_ldgm:  
+                 
+        mov bx , ax
+        mov dx , offset fator_res
+        mov cx , 1
+        call fread
+        
+        mov dx , offset relogio
+        mov cx , RelDIM
+        call fread
+        
+        mov dx , offset Username
+        mov cx , 11
+        call fread 
+        
+        mov dx , offset cell_num
+        mov cx , 2
+        call fread
+        
+        mov dx , offset gen_num
+        mov cx , 2
+        call fread
+        
+        mov dx , offset matriz_cell
+        mov cx , 15630
+        call fread
+        
+        endf_ldgm:
+        pop ax
+        pop di
+        pop si 
+        ret
     endp
     
     ;NOTA ANTES DE CHEGAR AQUI
@@ -391,57 +497,58 @@ start:
     ;se nao escreve a gen anterior
     saveGame proc
         
-        push bp
-        mov bp , sp
+        ;push bp
+        ;mov bp , sp
         
-        push offset filepath    ;[bp - 2] -> endereco da str filepath
+        ;push offset filepath    ;[bp - 2] -> endereco da str filepath
         
-        push cx
         push dx
+        push ax
+        push cx
         push si
         push di
 
-        mov si , [bp - 2]   
+        mov si , offset filepath   
         mov di , si
         add si , 13             ;para ter a certeza que nao tenho 
         mov [si], '\'             ;outro filepath na str
         inc si
         mov [si] , 0
         
-        ;mov di , [bp - 2]
-        mov si , offset JogosGuardados  ;filepath  ]e assim o caminho para a pasta
+        mov si , offset Jogos           ;filepath  ]e assim o caminho para a pasta
         call app_str                    ;com os jogos 
         
         dec di                          ;di esta a apontar para a posicao a seguir ao 0
         mov [di] , '\' 
-        mov di , [bp - 2]
+        inc di      
+        mov al , Username
+        mov [di] , al          ;primeiro char do nome
+      
+        ;mov si , offset Username
+        ;call app_str            ;por o nome do user
         
-        mov si , offset Username
-        call app_str            ;por o nome do user
-        
-        mov di , offset relogio
+        mov di , offset relogio 
         mov si , di     ;a funcao make_relogio_str precisa do offset relogio
         call ler_relogio     
         
-        mov di , offset str_relogio
+        mov di , offset str_relogio     ;continuar com offset da str_relogio no si
+        push di
         call make_relogio_str     
         
-        mov si , offset str_relogio
-        push si
-        mov bl , '/'
-        call del_char
-        
-        pop si 
-        sub sp , 2  ;continuar com si na stack
+        pop si
+        sub sp , 2            
         mov bl , ':'
         call del_char 
         
-        pop si
-        mov di , [bp - 2] 
+        
+        pop si                  
+        add si , 9 ;para usar so os HHMMSS 
+        
+        mov di , offset filepath
         call app_str  
         
         mov si , offset ext_str
-        mov di , [bp - 2]
+        mov di , offset filepath
         call app_str
          
         ;O CODIGO A BAIXO TIRA OS ESPACOS DA STR
@@ -462,13 +569,23 @@ start:
         mov dx , offset filepath
         call fcreate     
         
-        mov dx , [bp - 2]  
+        mov dx , offset filepath
         mov al , 2
-        call fopen
+        call fopen  
         
         mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
         mov cx , 1
         mov dx , offset fator_res     
+        call fwrite 
+        
+        mov dx , offset relogio
+        mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
+        mov cx , RelDIM
+        call fwrite
+        
+        mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
+        mov cx , 11
+        mov dx , offset Username
         call fwrite
         
         mov bx , handler ;REDUNDANCIAS VER SE NAO ME CAGA OS VALORES
@@ -487,15 +604,16 @@ start:
         call fwrite 
         
         mov bx , handler
-        mov dx , [bp - 2]
+        mov dx , offset filepath
         call fclose
             
         pop di
         pop si
-        pop cx
+        pop cx 
+        pop ax
         pop dx 
-        add sp , 2
-        pop bp
+        ;add sp , 2
+        ;pop bp
         ret
         
     endp
@@ -1036,7 +1154,9 @@ start:
         push ax
         xor ax,ax
         mov al,13h 
-        int 10h        
+        int 10h 
+        mov al , 1 
+        INT 33h 
         
         pop ax
         ret
@@ -2179,8 +2299,9 @@ start:
         pop dx
         pop cx
         ret
-    endp
-
+    endp  
+    
+    
     
 ends
 
