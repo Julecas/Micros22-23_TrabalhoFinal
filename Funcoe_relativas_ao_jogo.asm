@@ -40,16 +40,17 @@ data segment
     def_str db "Definicoes",0  
     res_str db "Resolucao:",0 
     rato_str db "Rato Preso",0
-    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release) 
+    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)   
+    voltar_str db 17,"Voltar",0
     ;Definicoes
     
     ;FICHEIROS  
     pedir_nome db "Nome do ficheiro:",0
-    input_str db "F235310.GAM",0;28 dup(0)  
+    input_str db "F235310.GAM",0;12 dup(0)  
     str_file_error db "File error num:",0 
     Username db 11 dup(0)
     ;Username db CHAR_STR_NOME dup(0)    
-    filepath    db "C:\GameOfLife",0;"C:\GameOfLife",0,
+    filepath    db "C:\GOLife",0;"C:\GOLife",0,
                 db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
     Exemplos db "Exemplos", 0 	; path to be created 
@@ -96,17 +97,9 @@ start:
     mov ds, ax
     mov es, ax
     
-    call set_video
+    call set_video         
     
-    mov di , offset str_top
-    call loadgame
-    jmp EXIT    
-    call init_matriz_dim   
-    call im        
-    call set_video
-   
-    call wait_key_press
-    call op_retomar
+    call definicoes
     
     EXIT:;TEMPORARIO  
     call wait_key_press
@@ -173,7 +166,7 @@ start:
     definicoes proc
         
         push bp
-        mov sp , bp     ;[bp - 2] -> cor do quadrado da opcao rato preso
+        mov bp , sp     ;[bp - 2] -> cor do quadrado da opcao rato preso
                         
         sub sp , 2
         
@@ -228,7 +221,22 @@ start:
             mov al , lado_cell
             call print_pos_int
         
+            ;Voltar
+            mov dx , 46
+            mov cx , 125
+            mov ax , 10
+            push ax
+            mov ax , 70
+            push ax
+            mov al , 15 ; BRANCO
+            call draw_rect  
             
+            mov dh , 6
+            mov dl , 17
+            mov si , offset voltar_str  
+            call print_pos
+                         
+                         
             ;Rato Preso 
             
             mov dx , 30
@@ -239,6 +247,8 @@ start:
             push ax
             mov ax , [bp - 2];cor do retangulo
             call draw_rect  
+            
+            
             
             mov dh , 4
             mov dl , 21
@@ -252,8 +262,28 @@ start:
                 call mouse_release
                 or bx , bx
                 
-            jz lp2_def
+            jz lp2_def   
             
+            ;Voltar 
+            
+            mov ax , 10  
+            push ax
+            mov ax , 70
+            push ax
+            mov ax , 46
+            push ax
+            mov ax , 125
+            push ax
+            call m_hitbox
+            
+            or ax , ax
+            jz if4_def
+                            
+                ;call menu                        
+                jmp exit_def
+                
+            if4_def:
+             
             ;res
             mov ax , 10
             push ax
@@ -301,6 +331,8 @@ start:
             
             ;mov [bp - 2] , 15;branco    
             jmp loop1_def     
+        
+        exit_def:
         
         pop dx
         pop cx
@@ -393,12 +425,20 @@ start:
         ;outline
         ;pedir ao user o nome do ficheiro 
         ;call loadGame0 
+        push ax
+        push bx
+        push cx
+        push dx 
+        push si
+        push di
         
-        mov ax , 2;cor do retangulo
+        mov ax , 0;cor do retangulo
         mov dx , 49
         mov cx , 42
-        mov bh , 50
-        mov bl , 180
+        mov bx , 180
+        push bx
+        mov bx , 50
+        push bx
         call print_retangulo
         
         mov si , offset pedir_nome 
@@ -407,6 +447,9 @@ start:
         mov bx , 0
         call print_pos     
         
+        mov al , 15
+        mov dx , 49
+        mov cx , 42
         mov bx , 50
         push bx
         mov bx , 180
@@ -417,7 +460,22 @@ start:
         mov dh , 9
         mov dl , 8
         xor  bx ,bx 
-        ;scanf  
+        
+        ;scanf       
+        ;di = str de destino
+        ;cx  = numero de char a ler
+        ;mov cx , 12
+        ;mov di , offset input_str
+        ;call scanf  
+        call wait_key_press
+        ;call LoadGame
+        
+        pop di
+        pop si
+        pop dx
+        pop cx
+        pop bx
+        pop ax
         
         ret
     endp
@@ -1697,7 +1755,63 @@ start:
          
         
         ret
-    endp print_pos_int
+    endp print_pos_int     
+    
+    ;di = str de destino
+    ;cx  = numero de char a ler
+    scanf proc
+                 ;guardar valor anterior
+        push bp 
+        mov bp , sp  ;[bp -2] -> numero de char
+        
+        push cx
+        push bx 
+        push ax
+        
+        dec [bp - 2]
+        
+        xor cx , cx 
+        xor bx , bx
+        
+        ;dec cx    ;reservo o ultimo char para terminar a str
+        ;add bx,di
+        
+        scanf_Bgwhile1:
+            
+            
+            mov ah,1
+            int 21h  ;ler 1 char
+          
+            cmp al,0dh      ;para parar no enter
+            je scanf_Endwhile1
+            
+            cmp al,08h          ;backspace
+            jne endif_scanf 
+                
+                or cx , cx      ;para nao conseguir escrever na memoria
+                jz scanf_Bgwhile1         
+                dec di           
+                dec cx
+                jmp scanf_Bgwhile1
+            
+            endif_scanf:
+  
+            mov [di], al    ;adiciona o char na memoria
+                    
+            inc di  
+            inc cx 
+            cmp cx , [bp - 2]
+            jb scanf_Bgwhile1 
+        scanf_Endwhile1:
+        
+        mov [di],0        
+        
+        pop ax  
+        pop Bx  
+        pop cx
+        pop bp
+        ret 
+    endp
 
 ;------------STRINGS------------;
       
@@ -1705,42 +1819,44 @@ start:
     ;dx = linhas
     ;cx = colunas
     ;al = cor
-    ;bh = altura
-    ;bl = comprimento
+    ;push1 = comprimento
+    ;push2 = altura
     print_retangulo proc
 
         push bp
         
-        mov bp,sp   ;[bp - 1] -> Largura
-                    ;[bp - 2] -> Comprimento
+        mov bp,sp   ;[bp + 4] -> altura
+                    ;[bp + 6] -> Comprimento
                            
         push bx     ;bx = comprimento
+        push cx 
         
-        xor bx,bx ;bx = 0
+        mov bx , [bp + 6]
+        ;xor bx,bx ;bx = 0
         
-        mov ah, 0ch
+        mov ah, 0ch      
+        push ax    
         
         lp_prret:   
-        
+            
+            pop ax
+            sub sp , 2
             int 10h     
             inc cx
-            inc bl
-            cmp bl,[bp - 2] ; comprimento
-            jb lp_prret
+            dec bx ; comprimento
+            jnz lp_prret
             
-            inc dx
-            
-            push bx         ;nao perder info
-            xor bh,bh
-            sub cx,bx       ;reset do comprimento
-            pop bx
-            xor bl,bl       ;reset do comprimento
-            inc bh
+            mov bx , [bp + 6]       ;reset do comprimento
+            sub cx , bx
             inc dx          ; proxima linha
-            cmp bh,[bp - 1]
-        jb lp_prret
+            dec word ptr[bp + 4]
+            mov ax , [bp + 4]       
+            or ax , ax
+            
+        jnz lp_prret
         
-
+        add sp , 2
+        pop cx
         pop bx               
         pop bp
         ret 4
