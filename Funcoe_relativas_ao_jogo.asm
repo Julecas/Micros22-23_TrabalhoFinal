@@ -36,6 +36,11 @@ data segment
     str_relogio db  STR_Rel_DIM dup(0)
     ;RELOGIO
     
+    ;sair
+    guardar_str db "Guardar",0
+    menu_str db "Menu",0
+    ;sair
+    
     ;Definicoes
     def_str db "Definicoes",0  
     res_str db "Resolucao:",0 
@@ -99,7 +104,14 @@ start:
     
     call set_video         
     
-    call definicoes
+    xor dx , dx
+    xor cx , cx
+    push 320
+    mov ax , 200
+    push ax
+    mov al , 2 
+    call print_retangulo
+    call op_sair
     
     EXIT:;TEMPORARIO  
     call wait_key_press
@@ -161,6 +173,64 @@ start:
         pop ax
         ret
         
+    endp     
+    
+    ;pop-up para sair do jogo
+    op_sair proc             
+        
+        mov ax , 0;cor do retangulo
+        mov dx , 75
+        mov cx , 90
+        mov bx , 140
+        push bx
+        mov bx , 50
+        push bx
+        call print_retangulo    
+        
+        mov al , 15
+        mov dx , 75
+        mov cx , 90
+        mov bx , 50
+        push bx
+        mov bx , 140
+        push bx
+        call draw_rect
+        
+        
+        ;menu
+        mov al , 15
+        mov dx , 86
+        mov cx , 140
+        mov bx , 10
+        push bx
+        mov bx , 40
+        push bx
+        call draw_rect      
+        
+        mov dh , 11
+        mov dl , 18
+        mov si , offset Menu_str  
+        call print_pos       
+        
+        ;Guardar
+        mov al , 15
+        mov dx , 102
+        mov cx , 125
+        mov bx , 10
+        push bx
+        mov bx , 70
+        push bx
+        call draw_rect      
+        
+        mov dh , 13
+        mov dl , 17
+        mov si , offset Guardar_str
+        call print_pos    
+        
+        ;falta hitbox         
+        
+        
+        ret
     endp
     
     definicoes proc
