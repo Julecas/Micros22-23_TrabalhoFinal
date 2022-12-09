@@ -8,21 +8,25 @@ data segment
     str_read db 33 dup(0) ;buffer de leitura 
     str_top db 37 dup(0) 
     str_file_error db "File error num:",0 
+    str_FilenameLog db "c:\gameOfLife\Logs.txt",0  
+    nl db 0dh , 0ah  ;new line
     
     ;exemplos de logs para debugg
     
-    str_log db "00360960Novais    22/11/03 03:35:59",0       ;cell number e offset + 30
-  
+    str_relogio db "24/11/22 14:53:22",0;STR_Rel_DIM  dup(0)
     
+    str_log db "00360960Novais    22/11/03 03:35:59",0      
     
-    cell_num  dw 960
+    cell_num  dw 554
     
-    gen_num dw 5
+    gen_num dw 753
     
-    Username db "olafeiofto",0
+    Username db "joulecas  ",0
     
     lowerCells dw ? ;quem tem menos cells no top 5
    
+    ;*********************************** DEBUGG
+    
     handler dw ? 
     
     VlineFile equ 6  
@@ -45,11 +49,11 @@ start:
 
     ;MAIN  
     
+    call writeLog
     
+    ;call writeTop5
     
-    call writeTop5
-    
-    call readtop5
+    ;call readtop5
         
     
     mov ax, 4c00h ; exit to operating system.
@@ -59,8 +63,106 @@ start:
     
     
     ;ROTINAS 
- 
+    
+    ;*****************************************************************
+    ; writeLog  
+    ; descricao: rotina que escreve no ficheiro logs o (log do jogador) ao sair do programa
+    ; input -  
+    ; output - 
+    ; destroi -  
+    ;*****************************************************************
+    proc writeLog
+    
+    push di
+    push dx
+    push cx
+    push ax
 
+    ;input - dx - offset para o nome do ficheiro \ al - 0 (read)/ 1(write)/ 2 R/W tipo de leitura   
+    ;output - bx file handler 
+    
+    mov dx, offset str_FilenameLog ;MARTIM TENS QUE MUDAR
+    mov al, 1
+    call fopen
+   
+    
+    ;SEEK TO END OF FILE
+    ; input -  
+    ; bx - file handler 
+    ; cx colunas
+    ; dx deLinhas :( 
+    
+    xor dx,dx
+    xor cx,cx
+    mov al,2 ;end of file
+    
+    mov ah, 42h ;read file (seek)
+        int 21h
+        
+        jnc if_wl 
+        
+            call print_file_error  
+      
+        if_wl:
+    
+    ;input - dx - offset para o buffer de escrita \ bx - file handler \ cx - number of bytes to read  
+
+
+             
+    ;Di = inicio str destino
+    ;Ax = num  
+    ;cx = numero de char   
+    ;int to str
+    
+    mov di,offset str_read  ;vou usar str_read como buffer de escrita
+    mov ax, gen_num
+    mov cx, 4 
+    call int_str
+    
+    mov bx, handler
+    mov dx,offset str_read
+    mov cx, 4  
+    call fwrite ;write gen     
+    
+    
+    mov di,offset str_read  
+    mov ax, cell_num
+    mov cx, 4 
+    call int_str
+    
+    mov bx, handler
+    mov dx,offset str_read
+    mov cx, 4  
+    call fwrite ;write cell num 
+    
+    
+    mov bx, handler
+    mov cx, 10 
+    mov dx,offset Username 
+    call fwrite ;write name 
+    
+    
+    mov bx, handler
+    mov dx, offset str_relogio
+    mov cx, 17 ;number of bytes to write
+    call fwrite ;write date 
+    
+    
+    mov bx, handler
+    mov dx, offset nl
+    mov cx, 2 ;number of bytes to write
+    call fwrite ;write date  
+    
+    
+    mov dx, offset str_FilenameLog
+    call fclose
+    
+    pop ax
+    pop cx
+    pop dx
+    pop di    
+        ret
+    endp writeLog     
     ;*****************************************************************
     ; writeTop5  
     ; descricao: rotina que escreve no top 5 um novo elemento
@@ -599,7 +701,7 @@ start:
     ;*****************************************************************
     ; fopen - open file
     ; descricao: rotina que abre um ficheiro
-    ; input - dx - offset para o nome do ficheiro \ al - tipo de leitura   
+    ; input - dx - offset para o nome do ficheiro \ al - 0 (read)/ 1(write)/ 2 R/W tipo de leitura    
     ; output - bx file handler 
     ; destroi - 
     ;*****************************************************************
@@ -649,7 +751,7 @@ start:
     ;*****************************************************************
     ; fwrite - write file
     ; descricao: rotina que escreve para um ficheiro
-    ; input - dx - offset para o nome do ficheiro \ bx - file handler \ cx - number of bytes to read  
+    ; input - dx - offset para o buffer leitura \ bx - file handler \ cx - number of bytes to read  
     ; output - 
     ; destroi - 
     ;*****************************************************************
