@@ -1396,14 +1396,41 @@ start:
         mov dl , 8
         xor  bx ,bx 
                
-        mov cx , 12
+        mov cx , 11
         mov di , offset input_str
         call scanf    
         
-        ;TODO VER SE FICHEIRO EXISTE
+        mov si , offset filepath   
+        mov di , si
+        add si , 9              ;para ter a certeza que nao tenho 
+        mov [si], '\'             ;outro filepath na str
+        inc si
+        mov [si] , 0
         
-        call wait_key_press
-        ;call LoadGame
+        mov si , offset Jogos
+        call app_str
+        
+        mov [di] , '\'
+        mov si , offset input_str
+        call app_str
+        
+        mov dx , offset filepath  
+        mov AH , 3Dh 
+        mov al , 2
+        int 21h
+        
+        jc if1_retomar
+            
+            mov bx , ax       
+            mov ah , 3eh
+            INT 21h ;close file
+            
+            call loadGame    
+            call Jogo
+            
+        if1_retormar:
+        
+        end_retomar:
         
         pop di
         pop si
@@ -1417,31 +1444,12 @@ start:
     
     ;Funcao que atualiza o jogo 
     ;input_str tem de ter o nome do ficheiro
+    ;filepath com o ficheiro
     LoadGame proc
         
         push si
         push di 
         push ax
-        
-        mov si , offset filepath   
-        mov di , si
-        add si , 9              ;para ter a certeza que nao tenho 
-        mov [si], '\'             ;outro filepath na str
-        inc si
-        mov [si] , 0 
-        
-        mov si , offset Jogos           ;filepath  ]e assim o caminho para a pasta
-        call app_str                    ;com os jogos
-        
-        dec di                          ;di esta a apontar para a posicao a seguir ao 0
-        mov [di] , '\'  
-        inc di
-        mov [di] , 0
-        mov di , offset filepath 
-        
-        mov si , offset input_str
-        call app_str            ;por o nome do ficheiro  
-        
         
         mov dx , offset filepath 
         mov al , 2
