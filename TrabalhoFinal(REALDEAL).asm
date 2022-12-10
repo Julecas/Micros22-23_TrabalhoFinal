@@ -61,7 +61,7 @@ data segment
     def_str db "Definicoes",0  
     res_str db "Resolucao:",0 
     rato_str db "Rato Preso",0
-    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)   
+    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)   
     voltar_str db 17,"Voltar",0             
     
     
@@ -70,11 +70,10 @@ data segment
     Logs_str db "Logs.txt",0
     Ftop_str db "TOP5.txt",0
     pedir_nome db "Nome do ficheiro:",0
-    input_str db "F235310.GAM",0            ;DEBUG
+    input_str db 12 dup(0)           
     str_file_error db "File error num:",0 
-    Username db "AIRacista ",0;11 dup(0)
-    ;Username db CHAR_STR_NOME dup(0)    
-    filepath    db "C:\GOLife",0;"C:\GOLife",0,
+    Username db CHAR_STR_NOME dup(0)    
+    filepath    db "C:\GOLife",0
                 db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
     Exemplos db "Exemplos", 0 	; path to be created 
@@ -93,9 +92,9 @@ data segment
     matrizY dw 0
     matrizX dw 0  
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
-    gen_num dw 420 
-    cell_num dw 69   
-    fator_res db 1              ;Depois de mexer aqui chamar funcao init_matriz_dim
+    gen_num dw 0 
+    cell_num dw 0   
+    fator_res db 2              ;Depois de mexer aqui chamar funcao init_matriz_dim
     
     ;------------MENU------------
     
@@ -132,21 +131,24 @@ start:
     mov ds, ax
     mov es, ax
     
-    call main
-   
-    call writeLog 
+    call init_matriz_dim
+    
+    call main  
     
     mov ax, 4c00h ; exit to operating system.
     int 21h       
     
+    ;ROTINAS
     
     main proc
         
+        main_loop:
          
-        call set_video
-        call printMenu
-        call select_op
-        
+            call set_video
+            call printMenu
+            call select_op
+        jmp main_loop
+                    
         ret
     endp
     
@@ -1428,10 +1430,8 @@ start:
             call loadGame    
             call Jogo
             
-        if1_retormar:
-        
-        end_retomar:
-        
+        if1_retomar:
+
         pop di
         pop si
         pop dx
@@ -1542,7 +1542,6 @@ start:
         sub sp , 2            
         mov bl , ':'
         call del_char 
-        
         
         pop si                  
         add si , 9 ;para usar so os HHMMSS 
@@ -1903,7 +1902,8 @@ start:
         pop bx
         pop dx
         pop cx
-        pop ax
+        pop ax 
+        call wait_key_press
         ret
     endp
     
@@ -3114,8 +3114,8 @@ start:
         
         fcreateClose_success: 
         
-        push bx
-        push ax
+        pop bx
+        pop ax
         
         ret    
     endp fcreate
