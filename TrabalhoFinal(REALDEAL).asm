@@ -37,10 +37,8 @@ data segment
     ;DEBUG
     
     handler dw ? 
-    ;fileName db "c:\porcaontas",0
-    ;str_test db "carla ola",0 ;string de teste para escrita em ficheiro
         
-    nl db 0dh , 0ah
+    nl db 0dh , 0ah   ;Newline
     ;------------TOP5------------             
 
     str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0
@@ -72,7 +70,7 @@ data segment
     pedir_nome db "Nome do ficheiro:",0
     input_str db 12 dup(0)           
     str_file_error db "File error num:",0 
-    Username db CHAR_STR_NOME dup(0)    
+    Username db "Exemplo   ";CHAR_STR_NOME dup(0)    
     filepath    db "C:\GOLife",0
                 db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
@@ -92,7 +90,7 @@ data segment
     matrizY dw 0
     matrizX dw 0  
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
-    gen_num dw 0 
+    gen_num dw 420 
     cell_num dw 0   
     fator_res db 2              ;Depois de mexer aqui chamar funcao init_matriz_dim
     
@@ -1614,8 +1612,6 @@ start:
         pop cx 
         pop ax
         pop dx 
-        ;add sp , 2
-        ;pop bp
         ret
         
     endp
@@ -1636,6 +1632,9 @@ start:
         push bx
         push si
         push di
+                
+        mov ax, 2  ;hide mouse cursor
+        int 33h
         
         mov si , di 
         
@@ -1647,17 +1646,7 @@ start:
           
         loop1_pgen:
                 
-                push ax
-                mov ax, 2  ;hide mouse cursor
-                int 33h
-                pop ax
-                 
-                call cell_status                                 
-                
-                push ax
-                mov ax, 1  ;show mouse cursor
-                int 33h
-                pop ax
+                call cell_status    
                 
                 ;se = 0 nao faz nada
                 ;else if = 1 morre
@@ -1696,6 +1685,9 @@ start:
         xor cx , cx
         mov bx , ax
         call print_matriz    
+        
+        mov ax, 1  ;show mouse cursor
+        int 33h     
         
         mov ax , [bp - 2]
         pop di
@@ -1873,7 +1865,10 @@ start:
         push ax
         push cx
         push dx 
-        push bx
+        push bx   
+        
+        mov ax, 2  ;hide mouse cursor
+        int 33h
         
         xor bx , bx
         mov bl , lado_cell
@@ -1898,6 +1893,9 @@ start:
             cmp dx , ECRAY
         
         jb lp1_ldmtr 
+        
+        mov ax, 1  ;hide mouse cursor
+        int 33h
         
         pop bx
         pop dx
