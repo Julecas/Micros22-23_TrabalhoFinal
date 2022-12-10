@@ -590,8 +590,8 @@ start:
         pop dx
         pop di    
         ret
-    endp writeLog 
-    
+    endp  
+               
     
     ;loop principal do jogo
     game_loop proc
@@ -630,6 +630,23 @@ start:
             int 21h
             mov bl , al
             
+            mov ax , 8
+            push ax
+            mov ax , 32
+            push ax
+            xor ax , ax
+            push ax
+            mov ax ,272
+            push ax      
+            call m_hitbox 
+            
+            or ax , ax
+            jz if1_gl
+                  
+                call op_sair
+            
+            if1_gl: 
+            
             pop ax
             
             inc gen_num
@@ -667,24 +684,9 @@ start:
         
         call init_matriz_dim
        
-        ;glider PARA TESTE
         mov si , offset matriz_cell
-        add si , 4 
         
         call set_video 
-        
-        ;funcao que desenha um quadrado/retangulo
-        ;dx = Linha do canto superior esquerdo
-        ;cx = Coluna do canto superior esquerdo
-        ;al = cor
-        ;push 1 = tamanho vertical
-        ;push 2 = tamanho horizontal
-        mov dx, 0
-        mov cx, 270
-        mov al, BRANCO
-        push 8
-        push 35
-        call draw_rect  ;rect top 5
         
         call print_status 
         mov di , offset matriz_cell
@@ -1139,10 +1141,50 @@ start:
         mov dh , 13
         mov dl , 17
         mov si , offset Guardar_str
-        call print_pos    
+        call print_pos 
+        
+        loop_os:
+           
+            ;menu
+            mov ax , 10
+            push ax
+            mov ax , 40
+            push ax
+            mov ax , 86
+            push ax
+            mov ax , 140
+            push ax 
+            call m_hitbox
+            
+            or ax , ax
+            jnz menu_os 
+            
+            ;Guardar
+            mov ax , 10
+            push ax
+            mov ax , 40
+            push ax
+            mov ax , 102
+            push ax 
+            mov ax , 125
+            push ax 
+            call m_hitbox
+            
+            or ax , ax
+            jnz if1_os
+                   
+                call saveGame 
+                mov ax, 4c00h ; exit to operating system.
+                int 21h 
+                   
+            if1_os:
+            
+        jmp loop_os 
+            
         
         ;falta hitbox         
         
+        menu_os:
         
         ret
     endp
@@ -1396,7 +1438,7 @@ start:
         mov dl , 8
         xor  bx ,bx 
                
-        mov cx , 11
+        mov cx , 12
         mov di , offset input_str
         call scanf    
         
@@ -1408,7 +1450,9 @@ start:
         mov [si] , 0
         
         mov si , offset Jogos
-        call app_str
+        call app_str    
+        
+        dec di
         
         mov [di] , '\'
         mov si , offset input_str
@@ -1426,7 +1470,19 @@ start:
             INT 21h ;close file
             
             call loadGame    
-            call Jogo
+            
+            call set_video
+            
+            xor cx , cx  
+            mov dx , CHARDIM
+            xor bh , bh 
+            mov Bl , lado_cell
+            mov si , offset matriz_cell  
+            call print_matriz  
+            
+            mov di , offset matriz_cell
+            call fill_matriz  
+            call game_loop
             
         if1_retomar:
 
@@ -3340,7 +3396,6 @@ start:
             cmp dh , al     ;enquanto estiver no msm segundo repete
             je lp1_slpkp
             
-            ;push bx
             push dx
             push cx 
             push ax
@@ -3355,7 +3410,6 @@ start:
             pop ax
             pop cx
             pop dx
-            ;pop bx
               
             or bx , bx
             jz fim_slpkp
