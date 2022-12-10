@@ -61,7 +61,7 @@ data segment
     def_str db "Definicoes",0  
     res_str db "Resolucao:",0 
     rato_str db "Rato Preso",0
-    rato_preso db 1             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)   
+    rato_preso db 0             ;Verdadeiro =>1 Falso == 1(define a opcao mouse release)   
     voltar_str db 17,"Voltar",0             
     
     
@@ -131,12 +131,24 @@ start:
     mov ax, data
     mov ds, ax
     mov es, ax
-
+    
+    call main
    
     call writeLog 
     
     mov ax, 4c00h ; exit to operating system.
     int 21h       
+    
+    
+    main proc
+        
+         
+        call set_video
+        call printMenu
+        call select_op
+        
+        ret
+    endp
     
     ;--------------MENU--------------
     
@@ -252,14 +264,17 @@ start:
         push dx
         push bx
         push ax
-        push si
+        push si 
         
         call im     ;incializa o rato
         xor  dx, dx  ;para meter os prints todos em (0,0)    
+        
+        mov ax, 1  ;show mouse cursor
+        int 33h
                                
         loop_select_op:    ;retorna posicao do rato e botoes primidos   xcoor = cx/ ycoord =dx
                             ; bx= 1 left b /bx= 2 right b/ bx= 3 both b 
-            ;call mouse_release
+            ;call mouse_release 
             call gmp 
             
             cmp bx, 1; verifica se o utilizador selecionou op (nao ta a funcionar :( )
@@ -419,10 +434,6 @@ start:
     ;***************************************************************** 
     creditos proc
         
-         
-        call c_time
-        
-        
         push ax
         push cx
         push dx
@@ -449,6 +460,7 @@ start:
         mov bx, 10 ;10 segundos de espera
         call sleep_key_press ;funcao de espera 
         
+        call main
         
         pop si
         pop dx
@@ -1627,8 +1639,18 @@ start:
         mov dx , CHARDIM 
           
         loop1_pgen:
-                  
+                
+                push ax
+                mov ax, 2  ;hide mouse cursor
+                int 33h
+                pop ax
+                 
                 call cell_status                                 
+                
+                push ax
+                mov ax, 1  ;show mouse cursor
+                int 33h
+                pop ax
                 
                 ;se = 0 nao faz nada
                 ;else if = 1 morre
@@ -1898,12 +1920,22 @@ start:
         shl ax , cl ;fica com 0 nos bits que eu nao quero ler, 
         
         loop1_fmtr:
+        
+            push ax
+            mov ax, 1  ;show mouse cursor
+            int 33h
+            pop ax
             
             call gmp
             
             push bx
             cmp bl , 1
             jne endif_fmtr
+                
+                push ax
+                mov ax, 2  ;hide mouse cursor
+                int 33h
+                pop ax
                 
                 cmp dx , CHARDIM
                 jb endif_fmtr 
@@ -2753,39 +2785,6 @@ start:
             ret 8                          
     endp m_hitbox 
     
-    ;*****************************************************************
-    ; showMousep - show mouse position   
-    ; descricao: rotina que imprime a posicao do rato
-    ; input -  
-    ; output - 
-    ; destroi -  
-    ;*****************************************************************  
-    
-    showMousep proc 
-        
-        call im    ;inicializa rato
-        call gmp   
-        
-        ;parametros
-        ;cx num carateres a escrever
-        ;ax numero a escrever
-        ;dh linha/dl coluna
-        
-        mov ax,cx ;x coord
-        mov dh, 0
-        mov dl, 20
-        call print_pos_int
-        
-        mov ax,dx ;y coord
-        mov dh, 0
-        mov dl, 20
-        call print_pos_int
-        
-        
-        
-        ret
-    endp showMousep
-    
     ;--------RATO--------;  
     
     ;--------RELOGIO--------; 
@@ -2928,25 +2927,7 @@ start:
         pop cx
         
         ret
-    endp  
-    
-    ;*****************************************************************
-    ; c_time -check time 
-    ; descricao: rotina que apresenta o tempo com base no relogio do computador
-    ; input -  
-    ; output - CH = hour /  CL = minute / DH = second / DL = 1/100 seconds
-    ; destroi -  
-    ;*****************************************************************
-    c_time proc 
-        
-        push ax
-        
-        mov ah ,2Ch 
-        int 21h ;get system time; 
-
-        pop ax
-        ret
-    endp c_time 
+    endp   
     
     ;--------RELOGIO-------;      
     
@@ -3359,17 +3340,12 @@ start:
             push ax
             
             dec bx
-            ;parametros
-            ;cx num carateres a escrever
-            ;ax numero a escrever
-            ;dh linha/dl coluna
             mov cx, 1 
             mov ax,bx
             mov dl, 14               
             mov dh, 0
-            call print_pos_int
-  
-            
+            call print_pos_int      
+
             pop ax
             pop cx
             pop dx
