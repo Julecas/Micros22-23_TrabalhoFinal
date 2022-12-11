@@ -296,7 +296,7 @@ start:
             je notRectJogar
                 
                 ;TODO perguntar username
-                call jogo
+                call jogo 
             
             jmp end_loop_select_op 
             
@@ -415,14 +415,15 @@ start:
         
         ;***
         ;jmp loop_select_op 
-        ;DEBUGG         
+        ;DEBUGG   
            
         pop si
         pop ax
         pop bx
         pop dx
            
-           ret    
+        ret 
+           
     endp select_op  
     
     ;*****************************************************************
@@ -529,7 +530,6 @@ start:
         mov di , offset str_relogio
         push di
         call make_relogio_str
-        call wait_key_press
         pop si  
         sub sp , 2  ;manter si na stack
         mov bl , '/' 
@@ -624,44 +624,59 @@ start:
             
             ;call wait_key_press ;temporario ? 
             
-            push ax 
+            jmp if2_gl
+                
+            lp2_gl:
             
-            mov ah, 1
+                push ax
+                
+                call gmp   
+                
+                or bx , bx    
+                jz if1_gl   ;verifica se estou a clicar
+                 
+                    mov ax , 10
+                    push ax
+                    mov ax , 40
+                    push ax      
+                    mov ax , 1
+                    push ax
+                    mov ax ,268
+                    push ax      
+                    call m_hitbox 
+                
+                or ax , ax
+                jz if1_gl
+                      
+                    call op_sair  
+                    pop ax
+                    jmp end_gl  
+                    
+                if1_gl:
+                
+                
+                mov dl , 255
+                mov ah , 6
+                int 21h
+                
+                pop ax      
+                jz lp2_gl  ;salta se nao houver um char no buffer
+            
+            if2_gl:
+            
+            mov dl , 255
+            mov ah , 6
             int 21h
-            mov bl , al
             
-            mov ax , 8
-            push ax
-            mov ax , 32
-            push ax
-            xor ax , ax
-            push ax
-            mov ax ,272
-            push ax      
-            call m_hitbox 
-            
-            or ax , ax
-            jz if1_gl
-                  
-                call op_sair
-            
-            if1_gl: 
-            
-            pop ax
+            jnz lp2_gl  ;salta se houver um char no buffer
             
             inc gen_num
-        
-        cmp bl , 8;backspace
-        je saveGame_gl    
+                        
         or ax , ax     
         jnz loop1_gl  
         
-        jmp end_gl
-        
-        saveGame_gl:
-            call saveGame
             
-        end_gl:
+        end_gl: 
         pop cx
         ret
     endp
@@ -680,7 +695,6 @@ start:
         push di
         push cx
         push dx
-              
         
         call init_matriz_dim
        
@@ -703,10 +717,10 @@ start:
         
         ;call set_video
             
-        push dx
-        push cx
-        push di
-        push si
+        pop dx
+        pop cx
+        pop di
+        pop si
         
         ret
     endp jogo
@@ -1094,6 +1108,8 @@ start:
     ;pop-up para sair do jogo
     op_sair proc             
         
+        call mouse_release
+        
         mov ax , 0;cor do retangulo
         mov dx , 75
         mov cx , 90
@@ -1144,32 +1160,37 @@ start:
         call print_pos 
         
         loop_os:
-           
-            ;menu
-            mov ax , 10
-            push ax
-            mov ax , 40
-            push ax
-            mov ax , 86
-            push ax
-            mov ax , 140
-            push ax 
-            call m_hitbox
             
-            or ax , ax
-            jnz menu_os 
-            
-            ;Guardar
-            mov ax , 10
-            push ax
-            mov ax , 40
-            push ax
-            mov ax , 102
-            push ax 
-            mov ax , 125
-            push ax 
-            call m_hitbox
-            
+            call gmp
+               
+            or bx , bx ;verifica se estou a clicar
+            jz loop_os
+                
+                ;menu
+                mov ax , 10
+                push ax
+                mov ax , 40
+                push ax
+                mov ax , 86
+                push ax
+                mov ax , 140
+                push ax 
+                call m_hitbox
+                
+                or ax , ax
+                jnz menu_os 
+                
+                ;Guardar
+                mov ax , 10
+                push ax
+                mov ax , 40
+                push ax
+                mov ax , 102
+                push ax 
+                mov ax , 125
+                push ax 
+                call m_hitbox
+                
             or ax , ax
             jnz if1_os
                    
@@ -1957,7 +1978,6 @@ start:
         pop dx
         pop cx
         pop ax 
-        call wait_key_press
         ret
     endp
     
