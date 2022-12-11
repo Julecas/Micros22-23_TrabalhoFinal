@@ -38,7 +38,14 @@ data segment
     
     handler dw ? 
         
-    nl db 0dh , 0ah   ;Newline
+    nl db 0dh , 0ah   ;Newline  
+    
+    ;-------------USERNAME---------
+    
+    str_insiraUser db "Insira o seu nome de utilizador",0AH,0DH,0AH,0DH,"      :",0
+    Username db 10 dup(20h),0 ;CHAR_STR_NOME dup(0) 
+    UserRegistado db 0
+    
     ;------------TOP5------------             
 
     str_rodapeTop5 db "GEN  CELLS  PLAYER      DATE     TIME",0AH,0DH,0
@@ -69,8 +76,7 @@ data segment
     Ftop_str db "TOP5.txt",0
     pedir_nome db "Nome do ficheiro:",0
     input_str db 12 dup(0)           
-    str_file_error db "File error num:",0 
-    Username db "Exemplo   ";CHAR_STR_NOME dup(0)    
+    str_file_error db "File error num:",0    
     filepath    db "C:\GOLife",0
                 db 43 dup(0)	; path to be created  
                         ;Numero maximo de char que um file path pode ter
@@ -164,7 +170,43 @@ start:
         push ax
         push cx
         push dx
-        push si
+        push si 
+        
+        mov cl, 1
+        cmp UserRegistado, cl   ;para nao pedir sempre a porra do nome ne
+        
+        je user_reg
+       
+        
+        ;*******************Username*****************  antes de imprimir o menu :)
+        
+        ;di = str de destino
+        ;cx  = numero de char a ler
+        ;scanf proc 
+        
+        mov dl, 5  ;coluna
+        mov dh, 10   ;linha
+        mov si, offset str_insiraUser 
+        call print_pos 
+        
+        
+        mov di, offset Username
+        mov cx, 10 ;Max name size
+        call scanf
+        
+        call set_video
+        
+        ;call wait_key_press ;DEBUGG 
+        
+        mov cl,1
+        mov UserRegistado, cl
+        
+        
+        ;********************************************  
+        
+        user_reg:
+        
+        
           
         mov dx, 12
         mov cx, 106
@@ -338,8 +380,8 @@ start:
             
             je notRectRetomar
             
-                mov si ,offset str_retomar             ;aqui vai tar a nossa condicao
-                call print_pos                   ;agora serve so de teste 
+                call op_retomar              ;aqui vai tar a nossa condicao
+                                                ;agora serve so de teste 
             
             jmp end_loop_select_op 
         
@@ -358,8 +400,8 @@ start:
             cmp ax, 0
             
             je notRectTop5
-                      
-                call op_retomar                  
+                 
+                call readtop5                      
             
             jmp end_loop_select_op
         
@@ -400,6 +442,7 @@ start:
             
             je notRectSair
                 
+                ;call writeTop5 
                 ;call log
                 mov ax, 4c00h ; exit to operating system.
                 int 21h                 
@@ -440,7 +483,9 @@ start:
         push dx
         push si
         
-        call set_video ;clear screen
+        call set_video ;clear screen 
+        
+        call pepe_the_frog
         
         mov dl, 9 ;coluna
         mov dh, 6 ;linha
@@ -1098,7 +1143,9 @@ start:
         pop dx 
         
         add sp, 2
-        pop bp
+        pop bp 
+        
+        call wait_key_press
         
         ret
     endp readtop5
@@ -2235,7 +2282,65 @@ start:
     endp
         
        
-    ;------------STRINGS------------;
+    ;------------STRINGS------------; 
+    
+    ;di = str de destino
+    ;cx  = numero de char a ler
+    scanf proc
+                 ;guardar valor anterior
+        push bp 
+        mov bp , sp  ;[bp -2] -> numero de char
+        
+        push cx
+        push bx 
+        push ax
+        
+        dec [bp - 2]
+        
+        xor cx , cx 
+        xor bx , bx
+        
+        ;dec cx    ;reservo o ultimo char para terminar a str
+        ;add bx,di
+        
+        scanf_Bgwhile1:
+            
+            
+            mov ah,1
+            int 21h  ;ler 1 char
+          
+            cmp al,0dh      ;para parar no enter
+            je scanf_Endwhile1
+            
+            cmp al,08h          ;backspace
+            jne endif_scanf 
+                
+                or cx , cx
+                jz scanf_Bgwhile1         
+                dec di           
+                dec cx
+                jmp scanf_Bgwhile1
+            
+            endif_scanf:
+  
+            mov [di], al    ;adiciona o char na memoria
+                    
+            inc di  
+            inc cx 
+            cmp cx , [bp - 2]
+            jb scanf_Bgwhile1 
+        scanf_Endwhile1:
+        
+        mov [di],0        
+        
+        pop ax  
+        pop Bx  
+        pop cx
+        pop bp
+        ret 
+    endp
+      
+ends
     
     ;Ax = num
     ;cx = numero de char a escrever
@@ -2638,61 +2743,7 @@ start:
         ret
     endp print_pos_int     
     
-    ;di = str de destino
-    ;cx  = numero de char a ler
-    scanf proc
-                 ;guardar valor anterior
-        push bp 
-        mov bp , sp  ;[bp -2] -> numero de char
-        
-        push cx
-        push bx 
-        push ax
-        
-        dec [bp - 2]
-        
-        xor cx , cx 
-        xor bx , bx
-        
-        ;dec cx    ;reservo o ultimo char para terminar a str
-        ;add bx,di
-        
-        scanf_Bgwhile1:
-            
-            
-            mov ah,1
-            int 21h  ;ler 1 char
-          
-            cmp al,0dh      ;para parar no enter
-            je scanf_Endwhile1
-            
-            cmp al,08h          ;backspace
-            jne endif_scanf 
-                
-                or cx , cx      ;para nao conseguir escrever na memoria
-                jz scanf_Bgwhile1         
-                dec di           
-                dec cx
-                jmp scanf_Bgwhile1
-            
-            endif_scanf:
-  
-            mov [di], al    ;adiciona o char na memoria
-                    
-            inc di  
-            inc cx 
-            cmp cx , [bp - 2]
-            jb scanf_Bgwhile1 
-        scanf_Endwhile1:
-        
-        mov [di],0        
-        
-        pop ax  
-        pop Bx  
-        pop cx
-        pop bp
-        ret 
-    endp
+    
 
 ;------------STRINGS------------;
       
@@ -2849,7 +2900,7 @@ start:
             ja notRect
             
             
-            mov ax, 1;já esta esta dentro?(foi o q ela disse :^))
+            mov ax, 1;j? esta esta dentro?(foi o q ela disse :^))
             
             jmp rect
             
@@ -3039,7 +3090,7 @@ start:
         ret
     endp print_pos   
                        
-                       pepe_the_frog proc
+ pepe_the_frog proc
         
         push dx
         push cx
