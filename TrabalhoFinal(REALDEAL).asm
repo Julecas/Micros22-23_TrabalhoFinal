@@ -32,19 +32,14 @@ data segment
     
     ;----------CONSTANTES----------
     
-    ;DEBUG
-    ;Username db "Matrim    ",0
-    ;DEBUG
-    
     handler dw ? 
-        
     nl db 0dh , 0ah   ;Newline  
     
     ;-------------USERNAME---------
     
     str_insiraUser db "Insira o seu nome de utilizador",0AH,0DH,0AH,0DH,"      :",0
-    Username db 10 dup(20h),0 ;CHAR_STR_NOME dup(0) 
-    UserRegistado db 0
+    Username db 10 dup(' '),0 ;Professor ]e fita cola preta mesmo 
+    UserRegistado db 0 
     
     ;------------TOP5------------             
 
@@ -96,7 +91,7 @@ data segment
     matrizY dw 0
     matrizX dw 0  
     lado_cell db 0              ;NAO MEXER , so se mexe no fator de res      
-    gen_num dw 420 
+    gen_num dw 0 
     cell_num dw 0   
     fator_res db 2              ;Depois de mexer aqui chamar funcao init_matriz_dim
     
@@ -105,7 +100,7 @@ data segment
     pkey db "returning in ( )s press any key..",0AH,0DH,0
     str_bemVindo db "Bem vindo",0 
     str_jogar db "Jogar",0
-    str_exemplos db "Exemplos",0
+    str_definicoes db "Definicoes",0
     str_retomar db "Retomar",0
     str_top5 db "TOP 5",0
     str_creditos db "creditos",0
@@ -150,7 +145,9 @@ start:
          
             call set_video
             call printMenu
-            call select_op
+            call select_op  
+            call mouse_release   
+            
         jmp main_loop
                     
         ret
@@ -172,11 +169,10 @@ start:
         push dx
         push si 
         
-        mov cl, 1
-        cmp UserRegistado, cl   ;para nao pedir sempre a porra do nome ne
+        mov cl , UserRegistado   ;para nao pedir sempre a porra do nome ne
+        or cl , cl
         
-        je user_reg
-       
+        jnz user_reg
         
         ;*******************Username*****************  antes de imprimir o menu :)
         
@@ -192,7 +188,8 @@ start:
         
         mov di, offset Username
         mov cx, 10 ;Max name size
-        call scanf
+        call scanf   
+        mov [di] , ' '
         
         call set_video
         
@@ -200,7 +197,6 @@ start:
         
         mov cl,1
         mov UserRegistado, cl
-        
         
         ;********************************************  
         
@@ -237,9 +233,9 @@ start:
         push HlenghtRect
         call draw_rect  ;rect exemplos
         
-        mov dl, 9
+        mov dl, 8
         mov dh, 13
-        mov si, offset str_exemplos
+        mov si, offset str_definicoes
         call print_pos ;print str exemplos 
         
         mov dx, 138
@@ -337,8 +333,11 @@ start:
             
             je notRectJogar
                 
-                ;TODO perguntar username
-                call jogo 
+                ;TODO perguntar username 
+                
+                mov gen_num , 0
+                mov cell_num , 0
+                call jogo  
             
             jmp end_loop_select_op 
             
@@ -356,15 +355,14 @@ start:
             
             cmp ax, 0
             
-            je notRectExemplos
+            je notRectdefinicoes
                 
-                 
-                mov si ,offset str_exemplos             ;aqui vai tar a nossa condicao
-                call print_pos                   ;agora serve so de teste 
+                call set_video
+                call definicoes 
             
             jmp end_loop_select_op 
             
-        notRectExemplos:
+        notRectdefinicoes:
         
             mov ax, VlenghtRect 
             push ax
@@ -380,7 +378,7 @@ start:
             
             je notRectRetomar
             
-                call op_retomar              ;aqui vai tar a nossa condicao
+                call op_retomar                 ;aqui vai tar a nossa condicao
                                                 ;agora serve so de teste 
             
             jmp end_loop_select_op 
@@ -420,8 +418,9 @@ start:
             cmp ax, 0
             
             je notRectCreditos
-                      
-                call creditos                  
+                                         
+                call creditos 
+                call wait_key_press                 
             
             jmp end_loop_select_op
         
@@ -443,7 +442,7 @@ start:
             je notRectSair
                 
                 ;call writeTop5 
-                ;call log
+                call writelog
                 mov ax, 4c00h ; exit to operating system.
                 int 21h                 
             
@@ -667,6 +666,9 @@ start:
             
             call prox_gen
             
+            or ax , ax 
+            jz end_gl
+            
             ;call wait_key_press ;temporario ? 
             
             jmp if2_gl
@@ -694,7 +696,7 @@ start:
                 jz if1_gl
                       
                     call op_sair  
-                    pop ax
+                    pop ax      ;para nao cagar a stack do push la de cima 
                     jmp end_gl  
                     
                 if1_gl:
@@ -721,7 +723,9 @@ start:
         jnz loop1_gl  
         
             
-        end_gl: 
+        end_gl:
+        
+        call mouse_release 
         pop cx
         ret
     endp
@@ -759,6 +763,8 @@ start:
       
         call wait_key_press
         call game_loop
+        
+        call writetop5
         
         ;call set_video
             
@@ -1057,7 +1063,7 @@ start:
             mov [di], 0
            
             
-            mov dl, 1
+            mov dl, 6
             mov dh, [bp - 2]
             mov si, offset str_read ; buffer for data        ;GEN
             call print_pos ;print geracao 1a linha 
@@ -1072,7 +1078,7 @@ start:
             add di, cx
             mov [di], 0
             
-            mov dl, 6
+            mov dl, 1
             mov dh, [bp - 2]                              ;CELLS
             mov si, offset str_read ; buffer for data
             call print_pos ;rint cellnumber 1a linha
@@ -1293,7 +1299,6 @@ start:
         loop1_def:
             
             
-            
             ;Resolucao
             mov dx , 30
             mov cx , PxVerPosOp1
@@ -1344,14 +1349,12 @@ start:
             call draw_rect  
             
             
-            
             mov dh , 4
             mov dl , 21
             mov si , offset rato_str  
             call print_pos 
             
             lp2_def:
-                
                 
                 call gmp
                 call mouse_release
@@ -3100,8 +3103,34 @@ ends
         mov dx , 7 
         mov cx , 0
         mov bx , 16
-        mov si , offset pepe                                            
-        call print_matriz
+        mov si , offset pepe  
+        
+        loop1_pepe:
+            
+                mov al,[si]             ;cor = valor na matriz, talvez trocar isto no futuro
+                
+                or [si],0
+                jz if1_pepe
+
+                    call print_quadrado            
+                
+                jmp endif1_pepe
+                if1_pepe:
+                    add cx , bx     ; proxima posicao
+                
+                endif1_pepe:
+                
+                inc si
+                
+                cmp cx , ECRAX            ;ate ao fim do ecra     
+            
+            jb loop1_pepe
+            
+            xor cx , cx         ;cx = 0
+            add dx , bx         ;proxima linha
+            cmp dx , ECRAY
+        jb loop1_pepe
+           
         
         pop si
         pop bx
@@ -3442,6 +3471,10 @@ ends
         push dx
         push ax
         push bx
+        
+        ;limpar o buffer ??
+        ;mov ax , 0c00h
+        ;int 21h
              
         mov ah , 2ch
         
@@ -3454,7 +3487,7 @@ ends
                 push ax 
                 
                 mov ah , 6
-                mov dl , 255
+                mov dl , 255     ;interrupt de i/o
                 int 21h     
                                                       
                 pop ax
@@ -3473,7 +3506,7 @@ ends
             
             dec bx
             mov cx, 1 
-            mov ax,bx
+            mov ax,bx             ;print ao numero em bx (tempo que falta)
             mov dl, 14               
             mov dh, 0
             call print_pos_int      
