@@ -202,8 +202,6 @@ start:
         
         user_reg:
         
-        
-          
         mov dx, 12
         mov cx, 106
         mov al,BRANCO 
@@ -649,11 +647,14 @@ start:
         mov si , offset matriz_cell  
         call print_matriz
         mov di , offset matriz_cell  
-        mov gen_num , 0  
+        mov gen_num , 0    
+        
+        mov ax, 2  ;hide mouse cursor
+        int 33h
         
         loop1_gl: 
             
-            call set_video ;limpar o ecra
+            call black_out ;limpar o ecra
 
             call print_status
             
@@ -709,13 +710,28 @@ start:
                 pop ax      
                 jz lp2_gl  ;salta se nao houver um char no buffer
             
+            
+            push ax
+                
+            mov ax, 2  ;hide mouse cursor
+            int 33h
+            
+            pop ax
             if2_gl:
             
             mov dl , 255
             mov ah , 6
             int 21h
             
-            jnz lp2_gl  ;salta se houver um char no buffer
+            jz if3_gl  ;salta se houver um char no buffer 
+                
+                push ax
+                mov ax, 1  ;show mouse cursor
+                int 33h
+                pop ax
+                jmp lp2_gl  
+                
+            if3_gl:
             
             inc gen_num
                         
@@ -1759,9 +1775,6 @@ start:
         push bx
         push si
         push di
-                
-        mov ax, 2  ;hide mouse cursor
-        int 33h
         
         mov si , di 
         
@@ -1805,16 +1818,14 @@ start:
             cmp dx , ECRAY
         jb loop1_pgen
         
-        call set_video      ;limpar o ecra
+        ;call set_video      ;limpar o ecra
+        call black_out
         call print_status
         
         mov dx , CHARDIM 
         xor cx , cx
         mov bx , ax
-        call print_matriz    
-        
-        mov ax, 1  ;show mouse cursor
-        int 33h     
+        call print_matriz       
         
         mov ax , [bp - 2]
         pop di
@@ -3557,7 +3568,28 @@ ends
         
         pop ax
         ret
-    endp 
+    endp      
+    
+    black_out proc       
+            
+        push cx
+        push dx  
+        push ax
+        
+        mov al , 0
+        mov dx , CHARDIM  
+        mov cx , ECRAX    
+        push cx
+        mov cx , 192 
+        push cx
+        xor cx , cx
+        call print_retangulo
+        
+        pop ax
+        pop dx
+        pop cx
+        ret 
+    endp
  
 ends
 
