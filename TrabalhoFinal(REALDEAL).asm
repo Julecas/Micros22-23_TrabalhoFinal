@@ -34,6 +34,7 @@ data segment
     
     handler dw ? 
     nl db 0dh , 0ah   ;Newline  
+    time0 db 0
     
     ;-------------USERNAME---------
     
@@ -97,7 +98,7 @@ data segment
     
     ;------------MENU------------
     
-    pkey db "returning in ( )s press any key..",0AH,0DH,0
+    pkey db "returning in 10sec press any key...",0AH,0DH,0
     str_bemVindo db "Bem vindo",0 
     str_jogar db "Jogar",0
     str_definicoes db "Definicoes",0
@@ -176,9 +177,6 @@ start:
         
         ;*******************Username*****************  antes de imprimir o menu :)
         
-        ;di = str de destino
-        ;cx  = numero de char a ler
-        ;scanf proc 
         
         mov dl, 5  ;coluna
         mov dh, 10   ;linha
@@ -417,8 +415,7 @@ start:
             
             je notRectCreditos
                                          
-                call creditos 
-                call wait_key_press                 
+                call creditos                      
             
             jmp end_loop_select_op
         
@@ -502,8 +499,6 @@ start:
         
         mov bx, 10 ;10 segundos de espera
         call sleep_key_press ;funcao de espera 
-        
-        call main
         
         pop si
         pop dx
@@ -777,7 +772,7 @@ start:
         mov Bl , lado_cell
         mov si , offset matriz_cell
       
-        call wait_key_press
+        ;call wait_key_press
         call game_loop
         
         call writetop5
@@ -2067,10 +2062,32 @@ start:
             push ax
             mov ax, 1  ;show mouse cursor
             int 33h
-            pop ax
             
             call gmp
+                       
+            or bx , bx    
+            jz if1_fmtr   ;verifica se estou a clicar
+                 
+                    mov ax , 10
+                    push ax
+                    mov ax , 56
+                    push ax      
+                    mov ax , 1
+                    push ax
+                    mov ax ,204
+                    push ax      
+                    call m_hitbox 
+                
+                or ax , ax
+                jz if1_fmtr
+                      
+                    pop ax      ;para nao cagar a stack do push la de cima 
+                    jmp fim_fmtr  
+                    
+                if1_fmtr: 
             
+            pop ax  
+            call gmp
             push bx
             cmp bl , 1
             jne endif_fmtr
@@ -2117,8 +2134,8 @@ start:
             endif_fmtr:
             
             pop bx           
-            cmp bl , 2 ;TEMPORARIO usa botao 2 para sair
-            je fim_fmtr:
+            ;cmp bl , 2 ;TEMPORARIO usa botao 2 para sair
+            ;je fim_fmtr:
         jmp loop1_fmtr
         fim_fmtr:  
         
@@ -3472,73 +3489,96 @@ ends
     
     ;------------------Files------------------   
     
+      
     ;bx = numero de segundos  
     ;para o programa x segundos
     ;Provavelmente tem comportamentos estranhos no emulador
     ;incerteza -> tempo de espera existe ]bx - 1(seg) +- (incerteza do interrupt) , bx [
-    sleep_key_press proc
-        
-        push cx 
-        push dx
+    sleep_key_press proc   
         push ax
         push bx
+        push cx 
+        push dx
         
-        ;limpar o buffer ??
-        ;mov ax , 0c00h
-        ;int 21h
-             
-        mov ah , 2ch
+        mov ah,2ch
         
-        int 21h
-        mov al , dh
+        int 21h  ;get system time
         
-        lp1_slpkp:
+        mov time0, dh ;segundo inicial
+                  
+        cmp time0, 50
+        
+        ja sleep_case ;quando no relogio temos 50 segundos  
+        
+        add time0, bl ;bx tem segundos
+        
+        sleep_lp:
+        
+            ;keypress
+               push dx
+               push ax 
                 
-                push dx
+               mov ah , 6
+               mov dl , 255     ;interrupt de io
+               int 21h     
+                                                      
+               pop ax
+               pop dx
+            ;keypress
+            jnz sleep_end_lp 
+        
+        
+            mov ah,2ch
+            int 21h  ;get system time
+            
+            
+            cmp time0, dh  
+                          
+            
+            je sleep_end_lp
+
+            jmp sleep_lp 
+            
+            
+        sleep_case:
+            
+        mov cl, 60
+        
+        sub cl, time0    
+             
+        
+        sleep_case_lp:
+        
+        ;keypress
+             push dx
                 push ax 
                 
                 mov ah , 6
-                mov dl , 255     ;interrupt de i/o
+                mov dl , 255     ;interrupt de io
                 int 21h     
                                                       
                 pop ax
                 pop dx
-                
-                jnz fim_slpkp    ;verifica por keypress
-                
-                int 21h
+        ;keypress 
+        jnz sleep_end_lp 
         
-            cmp dh , al     ;enquanto estiver no msm segundo repete
-            je lp1_slpkp
-            
-            push dx
-            push cx 
-            push ax
-            
-            dec bx
-            mov cx, 1 
-            mov ax,bx             ;print ao numero em bx (tempo que falta)
-            mov dl, 14               
-            mov dh, 0
-            call print_pos_int      
-
-            pop ax
-            pop cx
-            pop dx
-              
-            or bx , bx
-            jz fim_slpkp
-            
-                int 21h 
-                mov al , dh
-                jmp lp1_slpkp
-            
-        fim_slpkp:
+        push cx
+        mov ah,2ch       ;dh segundos
+        int 21h  ;get system time 
+        pop cx
         
+        cmp cl, dh 
+    
+        je sleep_end_lp 
+        
+        jmp sleep_case_lp
+          
+        sleep_end_lp:
+        
+        pop dx
+        pop cx
         pop bx
         pop ax
-        pop dx 
-        pop cx
         ret
         
     endp
