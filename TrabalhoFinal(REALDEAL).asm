@@ -1518,7 +1518,9 @@ start:
 
         mov dh , 9
         mov dl , 8
-        xor  bx ,bx 
+        xor  bx ,bx
+        mov ah , 2
+        int 10h         
                
         mov cx , 12
         mov di , offset input_str
@@ -1535,15 +1537,19 @@ start:
         call app_str    
         
         dec di
-        
-        mov [di] , '\'
+        mov [di] , '\'            
+        inc di 
+        mov [di] , 0
         mov si , offset input_str
-        call app_str
+        call app_str    
+        
+        dec di 
+        mov [di] , 0
         
         mov dx , offset filepath  
         mov AH , 3Dh 
         mov al , 2
-        int 21h
+        int 21h   
         
         jc if1_retomar
             
@@ -1594,7 +1600,7 @@ start:
         
         jnc if1_ldgm                  
         
-            ;PRINT FICHEIRO NAO EXISTE
+            ;PRINT FICHEIRO NAO EXISTE  
             jmp endf_ldgm
         if1_ldgm:  
                  
