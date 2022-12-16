@@ -1621,7 +1621,10 @@ start:
         
         mov dx , offset matriz_cell
         mov cx , 15630
-        call fread
+        call fread   
+        
+        mov AH , 3Eh
+        INT 21h  
         
         endf_ldgm:
         pop ax
