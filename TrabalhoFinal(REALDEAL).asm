@@ -39,7 +39,7 @@ data segment
     ;-------------USERNAME---------
     
     str_insiraUser db "Insira o seu nome de utilizador",0AH,0DH,0AH,0DH,"      :",0
-    Username db 10 dup(' '),0 ;Professor ]e fita cola preta mesmo 
+    Username db 10 dup(' '),0 ;Professor é fita cola preta mesmo 
     UserRegistado db 0 
     
     ;------------TOP5------------             
@@ -1427,8 +1427,9 @@ start:
                 cmp [bp - 2] , 15 
                 jne if2_def       
                 
-                    mov [bp - 2] , 2  
-                    mov rato_preso , 1
+                    mov [bp - 2] , 2 
+                    call mouse_release 
+                    mov rato_preso , 1 
                     jmp loop1_def 
                 if2_def:
                 
@@ -1443,6 +1444,7 @@ start:
         
         exit_def:
         
+        call wait_key_press
         pop dx
         pop cx
         pop bx
@@ -2379,8 +2381,6 @@ start:
         pop bp
         ret 
     endp
-      
-ends
     
     ;Ax = num
     ;cx = numero de char a escrever
